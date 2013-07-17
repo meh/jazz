@@ -1,0 +1,7 @@
+/ebin
+/deps
+erl_crash.dump
+*.ez
+update_db.sh
+copycat
+src/*.erl
