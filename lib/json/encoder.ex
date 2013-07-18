@@ -72,7 +72,32 @@ end
 
 defimpl JSON.Encoder, for: BitString do
   def to_json(self, _) do
-    inspect(self)
+    "\"" <> iolist_to_binary(encode(self)) <> "\""
+  end
+
+  @escape [?", ?\\, ?/, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
+  Enum.each @escape, fn
+    { match, insert } ->
+      defp :encode, [quote(do: << unquote(match) :: utf8, rest :: binary >>)], [], do: (quote do
+        [?\\, unquote(insert) | encode(rest)]
+      end)
+
+    match ->
+      defp :encode, [quote(do: << unquote(match) :: utf8, rest :: binary >>)], [], do: (quote do
+        [?\\, unquote(match) | encode(rest)]
+      end)
+  end
+
+  defp encode(<< char :: utf8, rest :: binary >>) when char in 0 .. 126 do
+    [char | encode(rest)]
+  end
+
+  defp encode(<< char :: utf8, rest :: binary >>) do
+    ["\\u", integer_to_list(char, 16) | encode(rest)]
+  end
+
+  defp encode("") do
+    []
   end
 end
 
