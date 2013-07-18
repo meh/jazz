@@ -16,10 +16,10 @@ Rules.
 
 {WS}+ : skip_token.
 
-{S}?{N}+(\.{N}+([eE]{S}?{N}+)?)? : { token, { number, TokenLine, lex_number(TokenChars) } }.
+{S}?{N}+(\.{N}+([eE]{S}?{N}+)?)? : { token, { number, TokenLine, TokenChars } }.
 
-"(\\.|[^"])*" : { token, { string, TokenLine, lex_string(TokenChars) } }.
-'(\\.|[^'])*' : { token, { string, TokenLine, lex_string(TokenChars) } }.
+"(\\.|[^"])*" : { token, { string, TokenLine, TokenChars } }.
+'(\\.|[^'])*' : { token, { string, TokenLine, TokenChars } }.
 
 \{ : { token, { '{', TokenLine } }.
 \} : { token, { '}', TokenLine } }.
@@ -30,17 +30,8 @@ Rules.
 \: : { token, { ':', TokenLine } }.
 \, : { token, { ',', TokenLine } }.
 
-true  : { token, { boolean, TokenLine, true } }.
-false : { token, { boolean, TokenLine, false } }.
+true  : { token, { true, TokenLine } }.
+false : { token, { false, TokenLine } }.
 null  : { token, { null, TokenLine } }.
 
 Erlang code.
-
-lex_string(String) ->
-  lists:reverse(tl(lists:reverse(tl(String)))).
-
-lex_number(Number) ->
-  case lists:member($., Number) of
-    true  -> list_to_float(Number);
-    false -> list_to_integer(Number)
-  end.

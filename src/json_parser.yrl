@@ -10,15 +10,16 @@ Nonterminals
   value object array members pair elements.
 
 Terminals
-  boolean null string number '{' '}' '[' ']' ':' ','.
+  true false null string number '{' '}' '[' ']' ':' ','.
 
 Rootsymbol
   value.
 
-value -> boolean : element(3, '$1').
+value -> true    : true.
+value -> false   : false.
 value -> null    : nil.
 value -> string  : parse_string('$1').
-value -> number  : element(3, '$1').
+value -> number  : parse_number('$1').
 value -> object  : '$1'.
 value -> array   : '$1'.
 
@@ -28,7 +29,7 @@ object -> '{' members '}' : '$2'.
 members -> pair : ['$1'].
 members -> pair ',' members : ['$1' | '$3'].
 
-pair -> string ':' value : { parse_string('$1'), '$3' }.
+pair -> string ':' value : { element(3, '$1'), '$3' }.
 
 array -> '[' ']' : [].
 array -> '[' elements ']' : '$2'.
@@ -38,5 +39,22 @@ elements -> value ',' elements : ['$1' | '$3'].
 
 Erlang code.
 
-parse_string({ string, _, String }) ->
-  list_to_binary(String).
+parse_string([$\\, $u, A, B, C, D | String]) ->
+  [list_to_integer([A, B, C, D], 16) | parse_string(String)];
+parse_string([A, B | String]) ->
+  [A, B | parse_string(String)];
+parse_string([$"]) ->
+  [];
+parse_string([$']) ->
+  [];
+
+parse_string({ string, _, [$' | String] }) ->
+  unicode:characters_to_binary(parse_string(String));
+parse_string({ string, _, [$" | String] }) ->
+  unicode:characters_to_binary(parse_string(String)).
+
+parse_number({ number, _, Number }) ->
+  case lists:member($., Number) of
+    true  -> list_to_float(Number);
+    false -> list_to_integer(Number)
+  end.

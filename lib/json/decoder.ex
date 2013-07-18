@@ -10,26 +10,14 @@ defmodule JSON.Decode do
   def it(string, options // [])
 
   def it(string, options) when is_binary(string) do
-    binary_to_list(string) |> it(options)
-  end
-
-  def it(string, options) do
-    case :json_lexer.string(string) do
+    case :json_lexer.string(string |> binary_to_list) do
       { :ok, lexed, _ } ->
         case :json_parser.parse(lexed) do
-          { :ok, parsed } ->
-            { :ok, case options[:as] do
-              nil ->
-                parsed
+          { :ok, parsed } when is_list(parsed) ->
+            it(parsed, options)
 
-              [as] ->
-                Enum.map parsed, fn parsed ->
-                  JSON.Decoder.from_json({ as, parsed, options })
-                end
-
-              as ->
-                JSON.Decoder.from_json({ as, parsed, options })
-            end }
+          { :ok, _ } = p ->
+            p
 
           { :error, _ } = e ->
             e
@@ -38,6 +26,21 @@ defmodule JSON.Decode do
       { :error, _ } = e ->
         e
     end
+  end
+
+  def it(parsed, options) when is_list(parsed) do
+    { :ok, case options[:as] do
+      nil ->
+        parsed
+
+      [as] ->
+        Enum.map parsed, fn parsed ->
+          JSON.Decoder.from_json({ as, parsed, options })
+        end
+
+      as ->
+        JSON.Decoder.from_json({ as, parsed, options })
+    end }
   end
 end
 
