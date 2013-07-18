@@ -18,11 +18,18 @@ defmodule JSON.Decode do
       { :ok, lexed, _ } ->
         case :json_parser.parse(lexed) do
           { :ok, parsed } ->
-            if as = options[:as] do
-              { :ok, JSON.Decoder.from_json({ as, parsed, options }) }
-            else
-              { :ok, parsed }
-            end
+            { :ok, case options[:as] do
+              nil ->
+                parsed
+
+              [as] ->
+                Enum.map parsed, fn parsed ->
+                  JSON.Decoder.from_json({ as, parsed, options })
+                end
+
+              as ->
+                JSON.Decoder.from_json({ as, parsed, options })
+            end }
 
           { :error, _ } = e ->
             e
@@ -32,7 +39,6 @@ defmodule JSON.Decode do
         e
     end
   end
-
 end
 
 defprotocol JSON.Decoder do
@@ -40,7 +46,7 @@ defprotocol JSON.Decoder do
 end
 
 defimpl JSON.Decoder, for: Tuple do
-  def from_json({ name, parsed, options }) do
+  def from_json({ name, parsed, _ }) do
     fields = name.__record__(:fields)
 
     [name | Enum.map(fields, fn { name, default } ->
