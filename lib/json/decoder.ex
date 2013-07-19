@@ -14,7 +14,7 @@ defmodule JSON.Decode do
       { :ok, lexed, _ } ->
         case :json_parser.parse(lexed) do
           { :ok, parsed } when is_list(parsed) ->
-            it(parsed, options)
+            { :ok, it(parsed, options) }
 
           { :ok, _ } = p ->
             p
@@ -28,19 +28,52 @@ defmodule JSON.Decode do
     end
   end
 
-  def it(parsed, options) when is_list(parsed) do
-    { :ok, case options[:as] do
-      nil ->
-        parsed
-
+  def it(parsed, [as: record]) when is_list(parsed) do
+    case record do
       [as] ->
         Enum.map parsed, fn parsed ->
-          JSON.Decoder.from_json({ as, parsed, options })
+          JSON.Decoder.from_json({ as, parsed, [] })
         end
 
       as ->
-        JSON.Decoder.from_json({ as, parsed, options })
-    end }
+        JSON.Decoder.from_json({ as, parsed, [] })
+    end
+  end
+
+  def it(parsed, [keys: :atoms]) when is_list(parsed) do
+    Enum.map parsed, fn
+      elem when is_list(elem) ->
+        it(elem, keys: :atoms)
+
+      { name, value } when is_list(value) ->
+        { binary_to_atom(name), it(value, keys: :atoms) }
+
+      { name, value } ->
+        { binary_to_atom(name), value }
+
+      value ->
+        value
+    end
+  end
+
+  def it(parsed, [keys: :atoms!]) when is_list(parsed) do
+    Enum.map parsed, fn
+      elem when is_list(elem) ->
+        it(elem, keys: :atoms!)
+
+      { name, value } when is_list(value) ->
+        { binary_to_existing_atom(name), it(value, keys: :atoms) }
+
+      { name, value } ->
+        { binary_to_existing_atom(name), value }
+
+      value ->
+        value
+    end
+  end
+
+  def it(parsed, []) do
+    parsed
   end
 end
 

@@ -29,7 +29,7 @@ object -> '{' members '}' : '$2'.
 members -> pair : ['$1'].
 members -> pair ',' members : ['$1' | '$3'].
 
-pair -> string ':' value : { element(3, '$1'), '$3' }.
+pair -> string ':' value : { parse_string('$1'), '$3' }.
 
 array -> '[' ']' : [].
 array -> '[' elements ']' : '$2'.
