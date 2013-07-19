@@ -12,10 +12,10 @@ defmodule JSON.Encode do
 
     cond do
       is_list(encode) ->
-        JSON.Encoder.to_json(encode, options)
+        { :ok, JSON.Encoder.to_json(encode, options) }
 
       is_binary(encode) ->
-        encode
+        { :ok, encode }
     end
   end
 end
@@ -44,10 +44,10 @@ defimpl JSON.Encoder, for: List do
   def to_json(self, options) do
     if object?(self) do
       "{" <> (Enum.map(self, fn { name, value } ->
-        inspect(atom_to_binary(name)) <> ":" <> JSON.encode(value, options)
+        inspect(atom_to_binary(name)) <> ":" <> JSON.encode!(value, options)
       end) |> Enum.join(",")) <> "}"
     else
-      "[" <> (Enum.map(self, JSON.encode(&1, options)) |> Enum.join(",")) <> "]"
+      "[" <> (Enum.map(self, JSON.encode!(&1, options)) |> Enum.join(",")) <> "]"
     end
   end
 end

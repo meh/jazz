@@ -13,6 +13,16 @@ defmodule JSON do
   defdelegate decode(string), to: JSON.Decode, as: :it
   defdelegate decode(string, options), to: JSON.Decode, as: :it
 
+  def encode!(data, options // []) do
+    case encode(data, options) do
+      { :ok, result } ->
+        result
+
+      { :error, error } ->
+        raise ArgumentError, message: error
+    end
+  end
+
   def decode!(string, options // []) do
     case decode(string, options) do
       { :ok, result } ->
