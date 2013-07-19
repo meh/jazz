@@ -39,14 +39,25 @@ elements -> value ',' elements : ['$1' | '$3'].
 
 Erlang code.
 
+% shit's slow yo
 parse_string([$\\, $u, A, B, C, D | String]) ->
   [list_to_integer([A, B, C, D], 16) | parse_string(String)];
-parse_string([A, B | String]) ->
-  [A, B | parse_string(String)];
-parse_string([$"]) ->
+parse_string([$\\, $b | String]) ->
+  [$\b | parse_string(String)];
+parse_string([$\\, $f | String]) ->
+  [$\f | parse_string(String)];
+parse_string([$\\, $n | String]) ->
+  [$\n | parse_string(String)];
+parse_string([$\\, $r | String]) ->
+  [$\r | parse_string(String)];
+parse_string([$\\, $t | String]) ->
+  [$\t | parse_string(String)];
+parse_string([$\\, Char | String]) ->
+  [Char | parse_string(String)];
+parse_string([_]) ->
   [];
-parse_string([$']) ->
-  [];
+parse_string([A | String]) ->
+  [A | parse_string(String)];
 
 parse_string({ string, _, [$' | String] }) ->
   unicode:characters_to_binary(parse_string(String));
