@@ -75,7 +75,7 @@ defimpl JSON.Encoder, for: BitString do
     "\"" <> iolist_to_binary(encode(self)) <> "\""
   end
 
-  @escape [?", ?\\, ?/, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
+  @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
   Enum.each @escape, fn
     { match, insert } ->
       defp :encode, [quote(do: << unquote(match) :: utf8, rest :: binary >>)], [], do: (quote do
