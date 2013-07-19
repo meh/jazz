@@ -28,15 +28,15 @@ defmodule JSON.Decode do
     end
   end
 
-  def it(parsed, [as: record]) when is_list(parsed) do
+  def it(parsed, [{ :as, record } | options]) when is_list(parsed) do
     case record do
       [as] ->
         Enum.map parsed, fn parsed ->
-          JSON.Decoder.from_json({ as, parsed, [] })
+          JSON.Decoder.from_json({ as, parsed, options })
         end
 
       as ->
-        JSON.Decoder.from_json({ as, parsed, [] })
+        JSON.Decoder.from_json({ as, parsed, options })
     end
   end
 
