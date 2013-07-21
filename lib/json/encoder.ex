@@ -41,6 +41,10 @@ defimpl JSON.Encoder, for: List do
     false
   end
 
+  def to_json([], _) do
+    "[]"
+  end
+
   def to_json(self, options) do
     if object?(self) do
       "{" <> (Enum.map(self, fn { name, value } ->
