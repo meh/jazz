@@ -76,7 +76,7 @@ end
 
 defimpl JSON.Encoder, for: BitString do
   def to_json(self, _) do
-    "\"" <> iolist_to_binary(encode(self)) <> "\""
+    %b/"#{self |> encode |> iolist_to_binary}"/
   end
 
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
