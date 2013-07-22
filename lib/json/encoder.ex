@@ -75,34 +75,38 @@ defimpl JSON.Encoder, for: Atom do
 end
 
 defimpl JSON.Encoder, for: BitString do
-  def to_json(self, _) do
-    %b/"#{self |> encode |> :unicode.characters_to_binary}"/
+  def to_json(self, options) do
+    %b/"#{self |> encode(if options[:escape] == :unicode do
+      :ascii
+    else
+      :unicode
+    end) |> String.from_char_list!}"/
   end
 
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
   Enum.each @escape, fn
     { match, insert } ->
-      defp :encode, [quote(do: << unquote(match) :: utf8, rest :: binary >>)], [], do: (quote do
-        [?\\, unquote(insert) | encode(rest)]
+      defp :encode, quote(do: [<< unquote(match) :: utf8, rest :: binary >>, mode]), [], do: (quote do
+        [?\\, unquote(insert) | encode(rest, mode)]
       end)
 
     match ->
-      defp :encode, [quote(do: << unquote(match) :: utf8, rest :: binary >>)], [], do: (quote do
-        [?\\, unquote(match) | encode(rest)]
+      defp :encode, quote(do: [<< unquote(match) :: utf8, rest :: binary >>, mode]), [], do: (quote do
+        [?\\, unquote(match) | encode(rest, mode)]
       end)
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>) when char in 0x20 .. 0x21 or
-                                                       char in 0x23 .. 0x5B or
-                                                       char in 0x5D .. 0xFFFF do
-    [char | encode(rest)]
+  defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x20 .. 0x21 or
+                                                                 char in 0x23 .. 0x5B or
+                                                                 char in 0x5D .. 0xFFFF do
+    [char | encode(rest, :unicode)]
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>) do
-    ["\\u", pad(integer_to_list(char, 16)) | encode(rest)]
+  defp encode(<< char :: utf8, rest :: binary >>, mode) do
+    ["\\u", pad(integer_to_list(char, 16)) | encode(rest, mode)]
   end
 
-  defp encode("") do
+  defp encode("", _) do
     []
   end
 
