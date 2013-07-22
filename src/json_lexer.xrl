@@ -8,7 +8,7 @@
 
 Definitions.
 
-WS = [\t\s]
+WS = [\t\s\r\n]
 N  = [0-9]
 S  = [+\-]
 
