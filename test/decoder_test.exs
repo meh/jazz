@@ -1,7 +1,7 @@
 Code.require_file "test_helper.exs", __DIR__
 
 defmodule DecoderTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   defrecord Foo, [:a, :b]
   defrecord Bar, [:a, :b]
