@@ -97,12 +97,17 @@ defimpl JSON.Encoder, for: BitString do
   end
 
   defp encode(<< char :: utf8, rest :: binary >>) do
-    ["\\u", integer_to_list(char, 16) | encode(rest)]
+    ["\\u", pad(integer_to_list(char, 16)) | encode(rest)]
   end
 
   defp encode("") do
     []
   end
+
+  defp pad([_] = s),          do: [?0, ?0, ?0 | s]
+  defp pad([_, _] = s),       do: [?0, ?0 | s]
+  defp pad([_, _, _] = s),    do: [?0 | s]
+  defp pad([_, _, _, _] = s), do: s
 end
 
 defimpl JSON.Encoder, for: Number do
