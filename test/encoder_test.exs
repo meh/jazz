@@ -21,6 +21,10 @@ defmodule EncoderTest do
   test "encodes strings correctly" do
     assert JSON.encode!("lol")    == %B/"lol"/
     assert JSON.encode!("\\\r\n") == %B/"\\\r\n"/
+    assert JSON.encode!("æß") == %B/"æß"/
+
+    assert JSON.encode!("lol", escape: :unicode) == %B/"lol"/
+    assert JSON.encode!("æß", escape: :unicode) == %B/"\u00E6\u00DF"/
   end
 
   test "encodes objects correctly" do
