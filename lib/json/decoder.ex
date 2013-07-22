@@ -10,7 +10,7 @@ defmodule JSON.Decode do
   def it(string, options // [])
 
   def it(string, options) when is_binary(string) do
-    case :json_lexer.string(string |> binary_to_list) do
+    case :json_lexer.string(string |> :unicode.characters_to_list) do
       { :ok, lexed, _ } ->
         case :json_parser.parse(lexed) do
           { :ok, parsed } when is_list(parsed) ->
