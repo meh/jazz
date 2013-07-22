@@ -76,11 +76,12 @@ end
 
 defimpl JSON.Encoder, for: BitString do
   def to_json(self, options) do
-    %b/"#{self |> encode(if options[:escape] == :unicode do
-      :ascii
-    else
-      :unicode
-    end) |> String.from_char_list!}"/
+    mode = case options[:escape] do
+      nil      -> :unicode
+      :unicode -> :ascii
+    end
+
+    [?", encode(self, mode), ?"] |> String.from_char_list!
   end
 
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
