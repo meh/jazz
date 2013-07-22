@@ -92,8 +92,10 @@ defimpl JSON.Encoder, for: BitString do
       end)
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>) when char in 0 .. 126 do
-    [char | encode(rest)]
+  defp encode(<< char :: utf8, rest :: binary >>) when char in 0x20 .. 0x21 or
+                                                       char in 0x23 .. 0x5B or
+                                                       char in 0x5D .. 0xFFFF do
+    [<< char :: utf8 >> | encode(rest)]
   end
 
   defp encode(<< char :: utf8, rest :: binary >>) do
