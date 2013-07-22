@@ -84,6 +84,12 @@ defimpl JSON.Encoder, for: BitString do
     [?", encode(self, mode), ?"] |> String.from_char_list!
   end
 
+  defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x20 .. 0x21 or
+                                                             char in 0x23 .. 0x5B or
+                                                             char in 0x5D .. 0x7E do
+    [char | encode(rest, mode)]
+  end
+
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
   Enum.each @escape, fn
     { match, insert } ->
@@ -97,9 +103,7 @@ defimpl JSON.Encoder, for: BitString do
       end)
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x20 .. 0x21 or
-                                                                 char in 0x23 .. 0x5B or
-                                                                 char in 0x5D .. 0xFFFF do
+  defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x7F .. 0xFFFF do
     [char | encode(rest, :unicode)]
   end
 
