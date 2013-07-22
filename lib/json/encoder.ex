@@ -76,7 +76,7 @@ end
 
 defimpl JSON.Encoder, for: BitString do
   def to_json(self, _) do
-    %b/"#{self |> encode |> iolist_to_binary}"/
+    %b/"#{self |> encode |> :unicode.characters_to_binary}"/
   end
 
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
@@ -95,7 +95,7 @@ defimpl JSON.Encoder, for: BitString do
   defp encode(<< char :: utf8, rest :: binary >>) when char in 0x20 .. 0x21 or
                                                        char in 0x23 .. 0x5B or
                                                        char in 0x5D .. 0xFFFF do
-    [<< char :: utf8 >> | encode(rest)]
+    [char | encode(rest)]
   end
 
   defp encode(<< char :: utf8, rest :: binary >>) do
