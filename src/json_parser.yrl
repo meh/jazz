@@ -39,7 +39,14 @@ elements -> value ',' elements : ['$1' | '$3'].
 
 Erlang code.
 
+-define(EXTENDED(First, Second),
+  16#10000 + ((First band 16#07ff) * 16#400) + (Second band 16#03ff)).
+
 % shit's slow yo
+parse_string([$\\, $u, A1, B1, C1, D1, $\\, $u, A2, B2, C2, D2 | String])
+    when (A1 == $d orelse A1 == $D) andalso (A2 == $d orelse A2 == $D) ->
+  [?EXTENDED(list_to_integer([A1, B1, C1, D1], 16),
+             list_to_integer([A2, B2, C2, D2], 16)) | parse_string(String)];
 parse_string([$\\, $u, A, B, C, D | String]) ->
   [list_to_integer([A, B, C, D], 16) | parse_string(String)];
 parse_string([$\\, $b | String]) ->
