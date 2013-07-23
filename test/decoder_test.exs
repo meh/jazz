@@ -29,6 +29,10 @@ defmodule DecoderTest do
   test "decodes strings correctly" do
     assert JSON.decode!(%B/"lol"/)    == "lol"
     assert JSON.decode!(%B/"\\\r\n"/) == "\\\r\n"
+
+    assert JSON.decode!(%B/"lol"/)          == "lol"
+    assert JSON.decode!(%B/"\u00E6\u00DF"/)  == "æß"
+    assert JSON.decode!(%B/"\uD834\uDD1E"/) == "𝄞"
   end
 
   test "decodes objects correctly" do
