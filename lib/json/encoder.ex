@@ -25,6 +25,22 @@ defprotocol JSON.Encoder do
 end
 
 defimpl JSON.Encoder, for: List do
+  defp offset(options) do
+    Keyword.get(options, :offset, 0)
+  end
+
+  defp offset(options, value) do
+    Keyword.put(options, :offset, value)
+  end
+
+  defp indentation(options) do
+    Keyword.get(options, :indent, 4) + Keyword.get(options, :offset, 0)
+  end
+
+  def spaces(number) do
+    String.duplicate(" ", number)
+  end
+
   def object?([{ head, _ } | _]) when not is_binary(head) and not is_atom(head) do
     false
   end
@@ -47,12 +63,48 @@ defimpl JSON.Encoder, for: List do
 
   def to_json(self, options) do
     if object?(self) do
-      "{" <> (Enum.map(self, fn { name, value } ->
-        inspect(atom_to_binary(name)) <> ":" <> JSON.encode!(value, options)
-      end) |> Enum.join(",")) <> "}"
+      encode_object(self, options, options[:pretty])
     else
-      "[" <> (Enum.map(self, JSON.encode!(&1, options)) |> Enum.join(",")) <> "]"
+      encode_array(self, options, options[:pretty])
     end
+  end
+
+  defp encode_object(self, options, pretty) when pretty == true do
+    offset = offset(options)
+    indent = indentation(options)
+
+    [first | rest] = Enum.map self, fn { name, value } ->
+      name  = JSON.encode!(to_binary(name))
+      value = JSON.encode!(value, offset(options, indent))
+
+      [",\n", spaces(indent), name, ": ", value]
+    end
+
+    ["{\n", tl(first), rest, "\n", spaces(offset), "}"] |> iolist_to_binary
+  end
+
+  defp encode_object(self, options, pretty) when pretty == false or pretty == nil do
+    [first | rest] = Enum.map self, fn { name, value } ->
+      [",", JSON.encode!(to_binary(name)), ":", JSON.encode!(value, options)]
+    end
+
+    ["{", tl(first), rest, "}"] |> iolist_to_binary
+  end
+
+  defp encode_array(self, options, pretty) when pretty == true do
+    [first | rest] = Enum.map self, fn element ->
+      [", ", JSON.encode!(element, options)]
+    end
+
+    ["[", tl(first), rest, "]"] |> iolist_to_binary
+  end
+
+  defp encode_array(self, options, pretty) when pretty == false or pretty == nil do
+    [first | rest] = Enum.map self, fn element ->
+      [",", JSON.encode!(element, options)]
+    end
+
+    ["[", tl(first), rest, "]"] |> iolist_to_binary
   end
 end
 
