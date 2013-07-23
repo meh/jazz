@@ -103,12 +103,22 @@ defimpl JSON.Encoder, for: BitString do
       end)
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x7F .. 0xFFFF do
+  defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x0000   .. 0xFFFF or
+                                                                 char in 0x010000 .. 0x10FFFF do
     [char | encode(rest, :unicode)]
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, mode) do
+  defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x0000 .. 0xFFFF do
     ["\\u", pad(integer_to_list(char, 16)) | encode(rest, mode)]
+  end
+
+  defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x010000 .. 0x10FFFF do
+    use Bitwise
+
+    point = char - 0x10000
+
+    ["\\u", pad(integer_to_list(0xD800 + (point >>> 10), 16)),
+     "\\u", pad(integer_to_list(0xDC00 + (point &&& 0x003FF), 16)) | encode(rest, mode)]
   end
 
   defp encode("", _) do
