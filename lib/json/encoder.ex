@@ -7,6 +7,7 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule JSON.Encode do
+  @spec it(term, Keyword.t) :: String.t
   def it(data, options // []) do
     encode = JSON.Encoder.to_json(data, options)
 
