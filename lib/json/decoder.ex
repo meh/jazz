@@ -7,6 +7,8 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule JSON.Decode do
+  @spec it(String.t | term)            :: { :ok, term } | { :error, term } | term
+  @spec it(String.t | term, Keyword.t) :: { :ok, term } | { :error, term } | term
   def it(string, options // [])
 
   def it(string, options) when is_binary(string) do
