@@ -7,12 +7,7 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule JSON do
-  defdelegate encode(data), to: JSON.Encode, as: :it
-  defdelegate encode(data, options), to: JSON.Encode, as: :it
-
-  defdelegate decode(string), to: JSON.Decode, as: :it
-  defdelegate decode(string, options), to: JSON.Decode, as: :it
-
+  @spec encode!(term, Keyword.t) :: String.t | no_return
   def encode!(data, options // []) do
     case encode(data, options) do
       { :ok, result } ->
@@ -23,6 +18,10 @@ defmodule JSON do
     end
   end
 
+  defdelegate encode(data), to: JSON.Encode, as: :it
+  defdelegate encode(data, options), to: JSON.Encode, as: :it
+
+  @spec decode!(term, Keyword.t) :: term | no_return
   def decode!(string, options // []) do
     case decode(string, options) do
       { :ok, result } ->
@@ -32,4 +31,7 @@ defmodule JSON do
         raise ArgumentError, message: error
     end
   end
+
+  defdelegate decode(string), to: JSON.Decode, as: :it
+  defdelegate decode(string, options), to: JSON.Decode, as: :it
 end
