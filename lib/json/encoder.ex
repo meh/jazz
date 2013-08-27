@@ -145,14 +145,14 @@ defimpl JSON.Encoder, for: BitString do
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
   Enum.each @escape, fn
     { match, insert } ->
-      defp :encode, quote(do: [<< unquote(match) :: utf8, rest :: binary >>, mode]), [], do: (quote do
+      defp encode(<< unquote(match) :: utf8, rest :: binary >>, mode) do
         [?\\, unquote(insert) | encode(rest, mode)]
-      end)
+      end
 
     match ->
-      defp :encode, quote(do: [<< unquote(match) :: utf8, rest :: binary >>, mode]), [], do: (quote do
+      defp encode(<< unquote(match) :: utf8, rest :: binary >>, mode) do
         [?\\, unquote(match) | encode(rest, mode)]
-      end)
+      end
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x0000   .. 0xFFFF or
