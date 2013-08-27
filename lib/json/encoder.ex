@@ -74,7 +74,7 @@ defimpl JSON.Encoder, for: List do
     indent = indentation(options)
 
     [first | rest] = Enum.map self, fn { name, value } ->
-      name  = JSON.encode!(to_binary(name))
+      name  = JSON.encode!(to_string(name))
       value = JSON.encode!(value, offset(options, indent))
 
       [",\n", spaces(indent), name, ": ", value]
@@ -85,7 +85,7 @@ defimpl JSON.Encoder, for: List do
 
   defp encode_object(self, options, pretty) when pretty == false or pretty == nil do
     [first | rest] = Enum.map self, fn { name, value } ->
-      [",", JSON.encode!(to_binary(name)), ":", JSON.encode!(value, options)]
+      [",", JSON.encode!(to_string(name)), ":", JSON.encode!(value, options)]
     end
 
     ["{", tl(first), rest, "}"] |> iolist_to_binary
@@ -185,7 +185,7 @@ end
 
 defimpl JSON.Encoder, for: Number do
   def to_json(self, _) do
-    to_binary(self)
+    to_string(self)
   end
 end
 
