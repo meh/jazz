@@ -26,6 +26,8 @@ defprotocol JSON.Encoder do
 end
 
 defimpl JSON.Encoder, for: List do
+  @compile { :inline, offset: 1, offset: 2, indentation: 1, spaces: 1 }
+
   defp offset(options) do
     Keyword.get(options, :offset, 0)
   end
@@ -38,23 +40,23 @@ defimpl JSON.Encoder, for: List do
     Keyword.get(options, :indent, 4) + Keyword.get(options, :offset, 0)
   end
 
-  def spaces(number) do
+  defp spaces(number) do
     String.duplicate(" ", number)
   end
 
-  def object?([{ head, _ } | _]) when not is_binary(head) and not is_atom(head) do
+  defp object?([{ head, _ } | _]) when not is_binary(head) and not is_atom(head) do
     false
   end
 
-  def object?([{ _, _ } | rest]) do
+  defp object?([{ _, _ } | rest]) do
     object?(rest)
   end
 
-  def object?([]) do
+  defp object?([]) do
     true
   end
 
-  def object?(_) do
+  defp object?(_) do
     false
   end
 
