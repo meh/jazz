@@ -193,7 +193,7 @@ defimpl JSON.Encoder, for: Number do
 end
 
 defimpl JSON.Encoder, for: Tuple do
-  def to_json(self, options) do
+  def to_json(self, _options) do
     name   = elem(self, 0)
     fields = name.__record__(:fields)
 
@@ -204,7 +204,7 @@ defimpl JSON.Encoder, for: Tuple do
 end
 
 defimpl JSON.Encoder, for: HashDict do
-  def to_json(self, options) do
+  def to_json(self, _options) do
     HashDict.to_list(self)
   end
 end
