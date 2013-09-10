@@ -19,27 +19,27 @@ defmodule EncoderTest do
   end
 
   test "encodes strings correctly" do
-    assert JSON.encode!("lol")    == %B/"lol"/
-    assert JSON.encode!("\\\r\n") == %B/"\\\r\n"/
-    assert JSON.encode!("æß") == %B/"æß"/
+    assert JSON.encode!("lol")    == %S/"lol"/
+    assert JSON.encode!("\\\r\n") == %S/"\\\r\n"/
+    assert JSON.encode!("æß") == %S/"æß"/
 
-    assert JSON.encode!("lol", escape: :unicode) == %B/"lol"/
-    assert JSON.encode!("æß", escape: :unicode)  == %B/"\u00E6\u00DF"/
-    assert JSON.encode!("𝄞", escape: :unicode)   == %B/"\uD834\uDD1E"/
+    assert JSON.encode!("lol", escape: :unicode) == %S/"lol"/
+    assert JSON.encode!("æß", escape: :unicode)  == %S/"\u00E6\u00DF"/
+    assert JSON.encode!("𝄞", escape: :unicode)   == %S/"\uD834\uDD1E"/
   end
 
   test "encodes objects correctly" do
-    assert JSON.encode!([lol: "wut"])        == %B/{"lol":"wut"}/
-    assert JSON.encode!([lol: [omg: "wut"]]) == %B/{"lol":{"omg":"wut"}}/
+    assert JSON.encode!([lol: "wut"])        == %S/{"lol":"wut"}/
+    assert JSON.encode!([lol: [omg: "wut"]]) == %S/{"lol":{"omg":"wut"}}/
   end
 
   test "encodes arrays correctly" do
-    assert JSON.encode!([1, 2, 3])                    == %B/[1,2,3]/
-    assert JSON.encode!([[lol: "wut"], [omg: "wut"]]) == %B/[{"lol":"wut"},{"omg":"wut"}]/
+    assert JSON.encode!([1, 2, 3])                    == %S/[1,2,3]/
+    assert JSON.encode!([[lol: "wut"], [omg: "wut"]]) == %S/[{"lol":"wut"},{"omg":"wut"}]/
   end
 
   test "encodes records correctly" do
-    assert JSON.encode!(Foo[a: 2, b: 3]) == %B/{"a":2,"b":3}/
-    assert JSON.encode!(Bar[a: 2, b: 3]) == %B/{"data":[2,3]}/
+    assert JSON.encode!(Foo[a: 2, b: 3]) == %S/{"a":2,"b":3}/
+    assert JSON.encode!(Bar[a: 2, b: 3]) == %S/{"data":[2,3]}/
   end
 end
