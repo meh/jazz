@@ -39,6 +39,8 @@ elements -> value ',' elements : ['$1' | '$3'].
 
 Erlang code.
 
+-compile([native]).
+
 -define(EXTENDED(First, Second),
   16#10000 + ((First band 16#07ff) * 16#400) + (Second band 16#03ff)).
 

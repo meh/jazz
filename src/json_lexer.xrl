@@ -35,3 +35,5 @@ false : { token, { false, TokenLine } }.
 null  : { token, { null, TokenLine } }.
 
 Erlang code.
+
+-compile([native]).
