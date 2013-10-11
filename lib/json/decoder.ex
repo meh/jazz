@@ -12,18 +12,12 @@ defmodule JSON.Decode do
   def it(string, options // [])
 
   def it(string, options) when is_binary(string) do
-    case :json_lexer.string(string |> String.to_char_list!) do
-      { :ok, lexed, _ } ->
-        case :json_parser.parse(lexed) do
-          { :ok, parsed } when is_list(parsed) ->
-            it(parsed, options)
+    case JSON.Parser.parse(string) do
+      { :ok, parsed } when is_list(parsed) ->
+        it(parsed, options)
 
-          { :ok, _ } = p ->
-            p
-
-          { :error, _ } = e ->
-            e
-        end
+      { :ok, _ } = p ->
+        p
 
       { :error, _ } = e ->
         e

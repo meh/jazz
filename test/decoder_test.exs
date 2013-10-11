@@ -31,7 +31,7 @@ defmodule DecoderTest do
     assert JSON.decode!(%S/"\\\r\n"/) == "\\\r\n"
 
     assert JSON.decode!(%S/"lol"/)          == "lol"
-    assert JSON.decode!(%S/"\u00E6\u00DF"/)  == "æß"
+    assert JSON.decode!(%S/"\u00E6\u00DF"/) == "æß"
     assert JSON.decode!(%S/"\uD834\uDD1E"/) == "𝄞"
   end
 
