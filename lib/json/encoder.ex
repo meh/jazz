@@ -9,14 +9,12 @@
 defmodule JSON.Encode do
   @spec it(term, Keyword.t) :: String.t
   def it(data, options // []) do
-    encode = JSON.Encoder.to_json(data, options)
-
-    cond do
-      is_list(encode) ->
-        { :ok, JSON.Encoder.to_json(encode, options) }
-
-      is_binary(encode) ->
+    case JSON.Encoder.to_json(data, options) do
+      { encode } when encode |> is_binary ->
         { :ok, encode }
+
+      value ->
+        it(value, options)
     end
   end
 end
@@ -61,15 +59,15 @@ defimpl JSON.Encoder, for: List do
   end
 
   def to_json([], _) do
-    "[]"
+    { "[]" }
   end
 
   def to_json(self, options) do
-    if object?(self) do
+    { if object?(self) do
       encode_object(self, options, options[:pretty])
     else
       encode_array(self, options, options[:pretty])
-    end
+    end }
   end
 
   defp encode_object(self, options, pretty) when pretty == true do
@@ -113,19 +111,19 @@ end
 
 defimpl JSON.Encoder, for: Atom do
   def to_json(true, _) do
-    "true"
+    { "true" }
   end
 
   def to_json(false, _) do
-    "false"
+    { "false" }
   end
 
   def to_json(nil, _) do
-    "null"
+    { "null" }
   end
 
   def to_json(self, _) do
-    atom_to_binary(self) |> inspect
+    atom_to_binary(self)
   end
 end
 
@@ -136,7 +134,7 @@ defimpl JSON.Encoder, for: BitString do
       :unicode -> :ascii
     end
 
-    [?", encode(self, mode), ?"] |> String.from_char_list!
+    { [?", encode(self, mode), ?"] |> String.from_char_list! }
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x20 .. 0x21 or
@@ -188,7 +186,7 @@ end
 
 defimpl JSON.Encoder, for: Number do
   def to_json(self, _) do
-    to_string(self)
+    { to_string(self) }
   end
 end
 
