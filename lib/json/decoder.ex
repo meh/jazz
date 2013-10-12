@@ -7,77 +7,83 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule JSON.Decode do
-  @spec it(String.t | term)            :: { :ok, term } | { :error, term } | term
-  @spec it(String.t | term, Keyword.t) :: { :ok, term } | { :error, term } | term
+  @spec it(String.t)            :: { :ok, term } | { :error, term } | term
+  @spec it(String.t, Keyword.t) :: { :ok, term } | { :error, term } | term
   def it(string, options // [])
 
-  def it(string, options) when is_binary(string) do
+  def it(string, options) when string |> is_binary do
     case JSON.Parser.parse(string) do
-      { :ok, parsed } when is_list(parsed) ->
-        it(parsed, options)
-
-      { :ok, _ } = p ->
-        p
+      { :ok, parsed } ->
+        { :ok, transform(parsed, options) }
 
       { :error, _ } = e ->
         e
     end
   end
 
-  def it(parsed, [{ :as, record } | options]) when is_list(parsed) do
-    { :ok, case record do
-      [as] ->
+  @spec transform(term) :: term
+  @spec transform(term, Keyword.t) :: term
+  def transform(parsed, options // [])
+
+  def transform(parsed, [keys: :atoms]) when parsed |> is_list do
+    Enum.map parsed, fn
+      elem when elem |> is_list ->
+        transform(elem, keys: :atoms)
+
+      { name, value } when value |> is_list ->
+        { binary_to_atom(name), transform(value, keys: :atoms) }
+
+      { name, value } ->
+        { binary_to_atom(name), value }
+
+      value ->
+        value
+    end
+  end
+
+  def transform(parsed, [keys: :atoms!]) when parsed |> is_list do
+    Enum.map parsed, fn
+      elem when is_list(elem) ->
+        transform(elem, keys: :atoms!)
+
+      { name, value } when is_list(value) ->
+        { binary_to_existing_atom(name), transform(value, keys: :atoms!) }
+
+      { name, value } ->
+        { binary_to_existing_atom(name), value }
+
+      value ->
+        value
+    end
+  end
+
+  def transform(parsed, []) do
+    parsed
+  end
+
+  def transform(parsed, options) do
+    case Keyword.fetch!(options, :as) do
+      as when as |> is_atom ->
+        JSON.Decoder.from_json({ as, parsed, options })
+
+      [as] when as |> is_atom ->
         Enum.map parsed, fn parsed ->
           JSON.Decoder.from_json({ as, parsed, options })
         end
 
-      as ->
-        JSON.Decoder.from_json({ as, parsed, options })
-    end }
-  end
+      as when as |> is_list ->
+        as = Enum.map as, fn { name, value } ->
+          { to_string(name), value }
+        end
 
-  def it(parsed, [keys: :atoms]) when is_list(parsed) do
-    { :ok, Enum.map(parsed, fn
-      elem when is_list(elem) ->
-        { :ok, value } = it(elem, keys: :atoms)
-
-        value
-
-      { name, value } when is_list(value) ->
-        { :ok, value } = it(value, keys: :atoms)
-
-        { binary_to_atom(name), value }
-
-      { name, value } ->
-        { binary_to_atom(name), value }
-
-      value ->
-        value
-    end) }
-  end
-
-  def it(parsed, [keys: :atoms!]) when is_list(parsed) do
-    { :ok, Enum.map(parsed, fn
-      elem when is_list(elem) ->
-        { :ok, value } = it(elem, keys: :atoms!)
-
-        value
-
-      { name, value } when is_list(value) ->
-        { :ok, value } = it(value, keys: :atoms!)
-
-        { binary_to_existing_atom(name), value }
-
-      { name, value } ->
-        { binary_to_existing_atom(name), value }
-
-      value ->
-        value
-    end) }
-  end
-
-  def it(parsed, []) do
-    { :ok, parsed }
+        Enum.map parsed, fn { name, value } ->
+          if spec = as[name] do
+            { name, transform(value, Keyword.put(options, :as, spec)) }
+          else
+            { name, value }
+          end
+        end
+    end
   end
 end
 

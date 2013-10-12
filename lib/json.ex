@@ -34,4 +34,7 @@ defmodule JSON do
 
   defdelegate decode(string), to: JSON.Decode, as: :it
   defdelegate decode(string, options), to: JSON.Decode, as: :it
+
+  defdelegate transform(data), to: JSON.Decode
+  defdelegate transform(data, options), to: JSON.Decode
 end
