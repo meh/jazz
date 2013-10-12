@@ -32,6 +32,8 @@ defmodule JSON.Parser do
     end
   end
 
+  use Bitwise
+
   @compile :native
   @whitespace ' \t\n\r'
   @dquote << ?\" >>
@@ -83,7 +85,7 @@ defmodule JSON.Parser do
   end
 
   defp chars_escape(<<>>, _), do: throw(:partial)
-  defp chars_escape(<< bin :: binary >>, _), do: throw(:invalid)
+  defp chars_escape(<< _ :: binary >>, _), do: throw(:invalid)
 
   defp chars_chunk_size(@dquote <> _, n), do: n
   defp chars_chunk_size(@escape <> _, n), do: n
@@ -132,7 +134,7 @@ defmodule JSON.Parser do
     whitespace(rest) |> members(obj)
   end
   defp members(<<>>, _), do: throw(:partial)
-  defp members(<< bin :: binary >>, _), do: throw(:invalid)
+  defp members(<< _ :: binary >>, _), do: throw(:invalid)
 
   defp number(<< rest :: binary >>, first) do
     case first do
@@ -189,11 +191,11 @@ defmodule JSON.Parser do
     whitespace(rest) |> pair(obj, key)
   end
   defp pair(<<>>, _, _), do: throw(:partial)
-  defp pair(bin, _, _),  do: throw(:invalid)
+  defp pair(<< _ :: binary >>, _, _),  do: throw(:invalid)
 
   defp pow(_, 0), do: 1
   defp pow(x, 1), do: x
-  defp pow(x, y) when band(y, 1) === 0, do: pow(x * x, div(y, 2))
+  defp pow(x, y) when y &&& 1 === 0, do: pow(x * x, div(y, 2))
   defp pow(x, y) when y > 1, do: x * pow(x, y - 1)
   defp pow(x, y) when y < 0, do: pow(1 / x, -y)
 
@@ -214,7 +216,7 @@ defmodule JSON.Parser do
     whitespace(rest) |> value
   end
   defp value(<<>>), do: throw(:partial)
-  defp value(<< bin :: binary >>), do: throw(:invalid)
+  defp value(<< _ :: binary >>), do: throw(:invalid)
 
   defp whitespace("    " <> rest), do: whitespace(rest)
   lc char inlist @whitespace do
