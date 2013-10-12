@@ -106,3 +106,9 @@ defimpl JSON.Decoder, for: HashDict do
     HashDict.new(parsed)
   end
 end
+
+defimpl JSON.Decoder, for: HashSet do
+  def from_json({ _, parsed, _ }) do
+    HashSet.new(parsed)
+  end
+end
