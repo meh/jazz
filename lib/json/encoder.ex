@@ -206,3 +206,9 @@ defimpl JSON.Encoder, for: HashDict do
     HashDict.to_list(self)
   end
 end
+
+defimpl JSON.Encoder, for: HashSet do
+  def to_json(self, _options) do
+    HashSet.to_list(self)
+  end
+end
