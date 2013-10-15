@@ -51,10 +51,20 @@ defmodule DecoderTest do
   end
 
   test "decodes nested as" do
-    decoded = JSON.decode!(%S/{"foo": {"a": 2, "b": 3}, "bar": {"data": [2, 3]}}/,
+    decoded = JSON.decode!(%S/{"foo": {"a": 2, "b": 3}, "bar": {"data": [2, 3]}, "baz": 23}/,
       as: [foo: Foo, bar: Bar])
 
     assert decoded["foo"] == Foo[a: 2, b: 3]
     assert decoded["bar"] == Bar[a: 2, b: 3]
+    assert decoded["baz"] == 23
+  end
+
+  test "decodes nested as with keys" do
+    decoded = JSON.decode!(%S/{"foo": {"a": 2, "b": 3}, "bar": {"data": [2, 3]}, "baz": 23}/,
+      as: [foo: Foo, bar: Bar], keys: :atoms)
+
+    assert decoded[:foo] == Foo[a: 2, b: 3]
+    assert decoded[:bar] == Bar[a: 2, b: 3]
+    assert decoded[:baz] == 23
   end
 end
