@@ -43,7 +43,7 @@ defmodule JSON.Decode do
 
   def transform(parsed, [keys: :atoms!]) when parsed |> is_list do
     Enum.map parsed, fn
-      elem when is_list(elem) ->
+      elem when elem |> is_list ->
         transform(elem, keys: :atoms!)
 
       { name, value } when is_list(value) ->
@@ -62,6 +62,8 @@ defmodule JSON.Decode do
   end
 
   def transform(parsed, options) do
+    keys = options[:keys]
+
     case Keyword.fetch!(options, :as) do
       as when as |> is_atom ->
         JSON.Decoder.from_json({ as, parsed, options })
@@ -77,11 +79,25 @@ defmodule JSON.Decode do
         end
 
         Enum.map parsed, fn { name, value } ->
-          if spec = as[name] do
-            { name, transform(value, Keyword.put(options, :as, spec)) }
-          else
-            { name, value }
+          value = cond do
+            spec = as[name] ->
+              transform(value, Keyword.put(options, :as, spec))
+
+            keys && value |> is_list ->
+              transform(value, keys: keys)
+
+            true ->
+              value
           end
+
+          if keys do
+            name = case keys do
+              :atoms  -> binary_to_atom(name)
+              :atoms! -> binary_to_existing_atom(name)
+            end
+          end
+
+          { name, value }
         end
     end
   end
