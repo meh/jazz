@@ -192,12 +192,7 @@ end
 
 defimpl JSON.Encoder, for: Tuple do
   def to_json(self, _options) do
-    name   = elem(self, 0)
-    fields = name.__record__(:fields)
-
-    Enum.with_index(fields) |> Enum.map fn { { name, _ }, index } ->
-      { name, elem(self, index + 1) }
-    end
+    self.to_keywords
   end
 end
 
