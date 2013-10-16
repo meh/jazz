@@ -109,11 +109,7 @@ end
 
 defimpl JSON.Decoder, for: Tuple do
   def from_json({ name, parsed, _ }) do
-    fields = name.__record__(:fields)
-
-    [name | Enum.map(fields, fn { name, default } ->
-      Dict.get(parsed, atom_to_binary(name), default)
-    end)] |> list_to_tuple
+    name.new(parsed)
   end
 end
 
