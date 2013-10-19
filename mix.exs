@@ -3,8 +3,8 @@ defmodule Jazz.Mixfile do
 
   def project do
     [ app: :jazz,
-      version: "0.0.1",
-      elixir: "~> 0.10.3",
+      version: "0.0.2",
+      elixir: "~> 0.10.4-dev",
       deps: deps ]
   end
 

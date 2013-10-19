@@ -184,7 +184,13 @@ defimpl JSON.Encoder, for: BitString do
   defp pad([_, _, _, _] = s), do: s
 end
 
-defimpl JSON.Encoder, for: Number do
+defimpl JSON.Encoder, for: Integer do
+  def to_json(self, _) do
+    { to_string(self) }
+  end
+end
+
+defimpl JSON.Encoder, for: Float do
   def to_json(self, _) do
     { to_string(self) }
   end
