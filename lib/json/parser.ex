@@ -100,6 +100,11 @@ defmodule JSON.Parser do
   end
   defp digits(rest), do: { [], rest }
 
+
+  defp elements("]" <> rest, arr) do
+    { leave_array(arr), rest }
+  end
+
   defp elements(<< bin :: binary >>, arr) do
     { val, rest } = value(bin)
     after_element(rest, [val | arr])
