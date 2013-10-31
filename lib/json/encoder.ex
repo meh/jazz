@@ -129,9 +129,13 @@ end
 
 defimpl JSON.Encoder, for: BitString do
   def to_json(self, options) do
-    mode = case options[:escape] do
-      nil      -> :unicode
-      :unicode -> :ascii
+    mode = options[:mode]
+
+    unless mode do
+      mode = case options[:escape] do
+        nil      -> :unicode
+        :unicode -> :ascii
+      end
     end
 
     { [?", encode(self, mode), ?"] |> String.from_char_list! }
@@ -154,6 +158,15 @@ defimpl JSON.Encoder, for: BitString do
       defp encode(<< unquote(match) :: utf8, rest :: binary >>, mode) do
         [?\\, unquote(match) | encode(rest, mode)]
       end
+  end
+
+  defp encode(<< char :: utf8, rest :: binary >>, :javascript) when char in [0x2028, 0x2029] do
+    ["\\u", integer_to_list(char, 16) | encode(rest, :javascript)]
+  end
+
+  defp encode(<< char :: utf8, rest :: binary >>, :javascript) when char in 0x0000   .. 0xFFFF or
+                                                                    char in 0x010000 .. 0x10FFFF do
+    [char | encode(rest, :javascript)]
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x0000   .. 0xFFFF or
