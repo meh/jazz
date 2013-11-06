@@ -89,7 +89,7 @@ defmodule JSON.Parser do
 
   defp chars_chunk_size(@dquote <> _, n), do: n
   defp chars_chunk_size(@escape <> _, n), do: n
-  defp chars_chunk_size(<< char, rest :: binary >>, n) when char < 0x7F do
+  defp chars_chunk_size(<< char, rest :: binary >>, n) when char <= 0x7F do
     chars_chunk_size(rest, n + 1)
   end
   defp chars_chunk_size(<< char :: utf8, rest :: binary >>, n) do
@@ -102,7 +102,6 @@ defmodule JSON.Parser do
     { [digit | digits], rest }
   end
   defp digits(rest), do: { [], rest }
-
 
   defp elements("]" <> rest, arr) do
     { leave_array(arr), rest }
