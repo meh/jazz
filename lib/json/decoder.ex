@@ -7,11 +7,9 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule JSON.Decode do
-  @spec it(String.t)            :: { :ok, term } | { :error, term } | term
-  @spec it(String.t, Keyword.t) :: { :ok, term } | { :error, term } | term
-  def it(string, options // [])
-
-  def it(string, options) when string |> is_binary do
+  @spec it(String.t)            :: { :ok, term } | { :error, term }
+  @spec it(String.t, Keyword.t) :: { :ok, term } | { :error, term }
+  def it(string, options // []) when string |> is_binary do
     case JSON.Parser.parse(string) do
       { :ok, parsed } ->
         { :ok, transform(parsed, options) }
@@ -19,6 +17,12 @@ defmodule JSON.Decode do
       { :error, _ } = e ->
         e
     end
+  end
+
+  @spec it!(String.t)            :: term | no_return
+  @spec it!(String.t, Keyword.t) :: term | no_return
+  def it!(string, options // []) when string |> is_binary do
+    JSON.Parser.parse!(string) |> transform(options)
   end
 
   @spec transform(term) :: term

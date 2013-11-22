@@ -1,237 +1,267 @@
-# The MIT License (MIT)
-#
-# Copyright (c) 2013 Andrew Hodges
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-# the Software, and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+defexception JSON.SyntaxError, token: nil do
+  def message(__MODULE__[token: token]) do
+    if token do
+      "Unexpected token: #{token}"
+    else
+      "Unexpected end of input"
+    end
+  end
+end
 
 defmodule JSON.Parser do
-  def parse(bin) do
-    try do
-      { :ok, value(bin) |> elem(0) }
-    catch
-      :partial ->
-        { :error, :partial }
+  @moduledoc """
+  An ECMA 404 conforming JSON parser.
 
-      :invalid ->
-        { :error, :invalid }
-    end
-  end
+  See: http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+  """
 
-  use Bitwise
+  alias JSON.SyntaxError
 
   @compile :native
-  @whitespace ' \t\n\r'
-  @dquote << ?\" >>
-  @escape << ?\\ >>
 
-  def decode(bin) do
-    value(bin)
+  @type t :: float | integer | String.t | Keyword.t
+
+  @spec parse(String.t) :: { :ok, t } | { :error, :invalid }
+    | { :error, :invalid, String.t }
+  def parse(string) when is_binary(string) do
+    { value, rest } = value(skip_whitespace(string))
+    case skip_whitespace(rest) do
+      "" -> { :ok, value }
+      other -> syntax_error(other)
+    end
+  catch
+    :invalid ->
+      { :error, :invalid }
+    { :invalid, token } ->
+      { :error, :invalid, token }
   end
 
-  defp after_pair("," <> rest, obj), do: members(rest, obj)
-  defp after_pair("}" <> rest, obj), do: { leave_object(obj), rest }
-  defp after_pair(<< ws, rest :: binary >>, obj) when ws in @whitespace do
-    whitespace(rest) |> after_pair(obj)
-  end
-
-  defp after_element("," <> rest, arr), do: elements(rest, arr)
-  defp after_element("]" <> rest, arr), do: { leave_array(arr), rest }
-  defp after_element(<< ws, rest :: binary >>, arr) when ws in @whitespace do
-    whitespace(rest) |> after_element(arr)
-  end
-
-  defp chars(<< bin :: binary >>, iolist) do
-    n = chars_chunk_size(bin, 0)
-    << chunk :: [binary, size(n)], rest :: binary >> = bin
-    chars_escape(rest, [iolist, chunk])
-  end
-
-  defp chars_escape(@dquote <> rest, iolist) do
-    { leave_string(iolist), rest }
-  end
-
-  lc { escape, char } inlist Enum.zip('"\\bfnrt', '"\\\b\f\n\r\t') do
-    defp chars_escape(<< @escape, unquote(escape), rest :: binary >>, iolist) do
-      chars(rest, [iolist, unquote(char)])
+  @spec parse(String.t) :: t
+  def parse!(string) do
+    case parse(string) do
+      { :ok, value } ->
+        value
+      { :error, :invalid } ->
+        raise SyntaxError
+      { :error, :invalid, token } ->
+        raise SyntaxError, token: token
     end
   end
 
-  defp chars_escape(<< @escape, ?u, a1, b1, c1, d1,
-                       @escape, ?u, a2, b2, c2, d2,
-                       rest :: binary >>, iolist) when a1 in [?d, ?D] and a2 in [?d, ?D] do
-    first     = list_to_integer([a1, b1, c1, d1], 16)
-    second    = list_to_integer([a2, b2, c2, d2], 16)
-    codepoint = 0x10000 + ((first &&& 0x07ff) * 0x400) + (second &&& 0x03ff)
-    chars(rest, [iolist, << codepoint :: utf8 >>])
-  end
-
-  defp chars_escape(<< @escape, ?u, a, b, c, d, rest :: binary >>, iolist) do
-    chars(rest, [iolist, << list_to_integer([a, b, c, d], 16) :: utf8 >>])
-  end
-
-  defp chars_escape(<<>>, _), do: throw(:partial)
-  defp chars_escape(<< _ :: binary >>, _), do: throw(:invalid)
-
-  defp chars_chunk_size(@dquote <> _, n), do: n
-  defp chars_chunk_size(@escape <> _, n), do: n
-  defp chars_chunk_size(<< char, rest :: binary >>, n) when char < 0x80 do
-    chars_chunk_size(rest, n + 1)
-  end
-  defp chars_chunk_size(<< char :: utf8, rest :: binary >>, n) do
-    chars_chunk_size(rest, n + codepoint_size(char))
-  end
-  defp chars_chunk_size(_, n), do: n
-
-  defp codepoint_size(char) when char < 0x8000, do: 2
-  defp codepoint_size(char) when char < 0x10000, do: 3
-  defp codepoint_size(char), do: 4
-
-  defp digits(<< digit, rest :: binary >>) when digit in ?0..?9 do
-    { digits, rest } = digits(rest)
-    { [digit | digits], rest }
-  end
-  defp digits(rest), do: { [], rest }
-
-  defp elements("]" <> rest, arr) do
-    { leave_array(arr), rest }
-  end
-
-  defp elements(<< bin :: binary >>, arr) do
-    { val, rest } = value(bin)
-    after_element(rest, [val | arr])
-  end
-
-  defp enter_array(<< bin :: binary >>) do
-    elements(bin, [])
-  end
-
-  defp enter_object(<< bin :: binary >>) do
-    members(bin, [])
-  end
-
-  defp enter_string(<< bin :: binary >>) do
-    chars(bin, [])
-  end
-
-  defp leave_array(arr),  do: :lists.reverse(arr)
-  defp leave_object(obj), do: obj
-  defp leave_string(str), do: iolist_to_binary(str)
-
-  defp members(@dquote <> rest, obj) do
-    { key, rest } = enter_string(rest)
-    pair(rest, obj, key)
-  end
-
-  defp members("}" <> rest, obj) do
-    { leave_object(obj), rest }
-  end
-
-  defp members(<< ws, rest :: binary >>, obj) when ws in @whitespace do
-    whitespace(rest) |> members(obj)
-  end
-  defp members(<<>>, _), do: throw(:partial)
-  defp members(<< _ :: binary >>, _), do: throw(:invalid)
-
-  defp number(<< rest :: binary >>, first) do
-    case first do
-      ?- ->
-        { digits, rest } = digits(rest)
-        int = [?- | digits]
-      ?0 ->
-        int = '+0'
-      _  ->
-        { digits, rest } = digits(rest)
-        int = [?+, first | digits]
-    end
-
-    [frac, exp | rest] = number_frac(rest)
-    { number(int, frac, exp), rest }
-  end
-
-  defp number(int, nil, nil), do: list_to_integer(int, 10)
-  defp number(int, nil, exp) do
-    int = list_to_integer(int, 10)
-    exp = list_to_integer(exp, 10)
-
-    pow(int, exp)
-  end
-  defp number(int, frac, nil), do: list_to_float(int ++ '.' ++ frac)
-  defp number(int, frac, exp), do: list_to_float(int ++ '.' ++ frac ++ 'e' ++ exp)
-
-  defp number_frac("." <> rest) do
-    { digits, rest } = digits(rest)
-    [digits | number_exp(rest)]
-  end
-  defp number_frac(rest), do: [nil | number_exp(rest)]
-
-  defp number_exp(<< e, rest :: binary >>) when e in 'eE' do
-    case rest do
-      "-" <> rest -> sign = ?-
-      "+" <> rest -> sign = ?+
-      _           -> sign = ?+
-    end
-
-    { digits, rest } = digits(rest)
-    [[sign | digits] | rest]
-  end
-  defp number_exp(rest), do: [nil | rest]
-
-  defp pair(":" <> rest, obj, key) do
-    { val, rest } = value(rest)
-
-    obj = [{ key, val } | obj] #Dict.put_new(obj, key, val)
-    after_pair(rest, obj)
-  end
-
-  defp pair(<< ws, rest :: binary>>, obj, key) when ws in @whitespace do
-    whitespace(rest) |> pair(obj, key)
-  end
-  defp pair(<<>>, _, _), do: throw(:partial)
-  defp pair(<< _ :: binary >>, _, _),  do: throw(:invalid)
-
-  defp pow(_, 0), do: 1
-  defp pow(x, 1), do: x
-  defp pow(x, y) when y &&& 1 === 0, do: pow(x * x, div(y, 2))
-  defp pow(x, y) when y > 1, do: x * pow(x, y - 1)
-  defp pow(x, y) when y < 0, do: pow(1 / x, -y)
-
-  defp value(@dquote <> rest), do: enter_string(rest)
-  defp value("{"     <> rest), do: enter_object(rest)
-  defp value("["     <> rest), do: enter_array(rest)
-  defp value("true"  <> rest), do: { true,  rest }
+  defp value("\"" <> rest),    do: string_start(rest)
+  defp value("{" <> rest),     do: object_start(rest)
+  defp value("[" <> rest),     do: array_start(rest)
+  defp value("null" <> rest),  do: { nil, rest }
+  defp value("true" <> rest),  do: { true, rest }
   defp value("false" <> rest), do: { false, rest }
-  defp value("null"  <> rest), do: { nil,   rest }
 
-  lc char inlist '-0123456789' do
-    defp value(<< unquote(char), rest :: binary >>) do
-      number(rest, unquote(char))
+  defp value(<< char, _ :: binary >> = string) when char in '-0123456789' do
+    number_start(string)
+  end
+
+  defp value(other), do: syntax_error(other)
+
+  ## Objects
+
+  defp object_start(string) do
+    object_pairs(skip_whitespace(string), [])
+  end
+
+  defp object_pairs("\"" <> rest, acc) do
+    { name, rest } = string_start(rest)
+    { value, rest } = case skip_whitespace(rest) do
+      ":" <> rest -> value(skip_whitespace(rest))
+      other -> syntax_error(other)
+    end
+
+    acc = [ { name, value } | acc ]
+    case skip_whitespace(rest) do
+      "," <> rest -> object_pairs(skip_whitespace(rest), acc)
+      "}" <> rest -> { :lists.reverse(acc), rest }
+      other -> syntax_error(other)
     end
   end
 
-  defp value(<< ws, rest :: binary >>) when ws in @whitespace do
-    whitespace(rest) |> value
+  defp object_pairs("}" <> rest, []) do
+    { [], rest }
   end
-  defp value(<<>>), do: throw(:partial)
-  defp value(<< _ :: binary >>), do: throw(:invalid)
 
-  defp whitespace("    " <> rest), do: whitespace(rest)
-  lc char inlist @whitespace do
-    defp whitespace(<< unquote(char), rest :: binary >>), do: whitespace(rest)
+  defp object_pairs(other, _), do: syntax_error(other)
+
+  ## Arrays
+
+  defp array_start(string) do
+    array_values(skip_whitespace(string), [])
   end
-  defp whitespace(rest), do: rest
+
+  defp array_values("]" <> rest, _) do
+    { [], rest }
+  end
+
+  defp array_values(string, acc) do
+    { value, rest } = value(string)
+
+    acc = [ value | acc ]
+    case skip_whitespace(rest) do
+      "," <> rest -> array_values(skip_whitespace(rest), acc)
+      "]" <> rest -> { :lists.reverse(acc), rest }
+      other -> syntax_error(other)
+    end
+  end
+
+  ## Numbers
+
+  defp number_start("-" <> rest) do
+    case rest do
+      "0" <> rest -> number_frac(rest, ["-0"])
+      rest -> number_int(rest, [?-])
+    end
+  end
+
+  defp number_start("0" <> rest) do
+    number_frac(rest, [?0])
+  end
+
+  defp number_start(string) do
+    number_int(string, [])
+  end
+
+  defp number_int(<< char, _ :: binary >> = string, acc) when char in '123456789' do
+    { digits, rest } = number_digits(string)
+    number_frac(rest, [acc, digits])
+  end
+
+  defp number_int(other, _), do: syntax_error(other)
+
+  defp number_frac("." <> rest, acc) do
+    { digits, rest } = number_digits(rest)
+    number_exp(rest, true, [acc, ?., digits])
+  end
+
+  defp number_frac(string, acc) do
+    number_exp(string, false, acc)
+  end
+
+  defp number_exp(<< e, rest :: binary >>, frac, acc) when e in 'eE' do
+    e = if frac, do: ?e, else: ".0e"
+    acc = case rest do
+      "-" <> rest ->
+        { digits, rest } = number_digits(rest)
+        [acc, e, ?-, digits]
+      "+" <> rest ->
+        { digits, rest } = number_digits(rest)
+        [acc, e, digits]
+      rest ->
+        { digits, rest } = number_digits(rest)
+        [acc, e, digits]
+    end
+    { number_complete(acc, true), rest }
+  end
+
+  defp number_exp(string, frac, acc) do
+    { number_complete(acc, frac), string }
+  end
+
+  defp number_complete(iolist, false) do
+    binary_to_integer(iolist_to_binary(iolist))
+  end
+
+  defp number_complete(iolist, true) do
+    binary_to_float(iolist_to_binary(iolist))
+  end
+
+  defp number_digits(string) do
+    count = number_digits_count(string, 0)
+    << digits :: [ binary, size(count) ], rest :: binary >> = string
+    { digits, rest }
+  end
+
+  defp number_digits_count(<< char, rest :: binary >>, acc) when char in '0123456789' do
+    number_digits_count(rest, acc + 1)
+  end
+
+  defp number_digits_count(other, 0), do: syntax_error(other)
+  defp number_digits_count(_, acc),   do: acc
+
+  ## Strings
+
+  defp string_start(string) do
+    { iolist, rest } = string_continue(string, [])
+    { iolist_to_binary(iolist), rest }
+  end
+
+  defp string_continue("\"" <> rest, acc) do
+    { acc, rest }
+  end
+
+  defp string_continue("\\" <> rest, acc) do
+    string_escape(rest, acc)
+  end
+
+  defp string_continue("", _), do: throw(:invalid)
+
+  defp string_continue(string, acc) do
+    n = string_chunk_size(string, 0)
+    << chunk :: [ binary, size(n) ], rest :: binary >> = string
+    string_continue(rest, [ acc, chunk ])
+  end
+
+  lc { seq, char } inlist Enum.zip('"ntr\\/fb', '"\n\t\r\\/\f\b') do
+    defp string_escape(<< unquote(seq), rest :: binary >>, acc) do
+      string_continue(rest, [ acc, unquote(char) ])
+    end
+  end
+
+  # http://www.ietf.org/rfc/rfc2781.txt
+  # http://perldoc.perl.org/Encode/Unicode.html#Surrogate-Pairs
+  defp string_escape(<< ?u, a1, b1, c1, d1, "\\u", a2, b2, c2, d2, rest :: binary >>, acc)
+      when a1 in [?d, ?D] and a2 in [?d, ?D] do
+    hi = list_to_integer([ a1, b1, c1, d1 ], 16)
+    lo = list_to_integer([ a2, b2, c2, d2 ], 16)
+    codepoint = 0x10000 + ((hi - 0xD800) * 0x400) + (lo - 0xDC00)
+    string_continue(rest, [ acc, << codepoint :: utf8 >> ])
+  end
+
+  defp string_escape(<< ?u, seq :: [ binary, size(4) ], rest :: binary >>, acc) do
+    string_continue(rest, [ acc, << binary_to_integer(seq, 16) :: utf8 >> ])
+  end
+
+  defp string_escape(other, _), do: syntax_error(other)
+
+  defp string_chunk_size("\"" <> _, acc), do: acc
+  defp string_chunk_size("\\" <> _, acc), do: acc
+
+  defp string_chunk_size(<< char, rest :: binary >>, acc) when char < 0x80 do
+    string_chunk_size(rest, acc + 1)
+  end
+
+  defp string_chunk_size(<< codepoint :: utf8, rest :: binary >>, acc) do
+    string_chunk_size(rest, acc + string_codepoint_size(codepoint))
+  end
+
+  defp string_chunk_size(_, acc), do: acc
+
+  defp string_codepoint_size(codepoint) when codepoint < 0x8000,  do: 2
+  defp string_codepoint_size(codepoint) when codepoint < 0x10000, do: 3
+  defp string_codepoint_size(_),                                  do: 4
+
+  ## Whitespace
+
+  defp skip_whitespace("    " <> rest), do: skip_whitespace(rest)
+
+  defp skip_whitespace(<< char, rest :: binary >>) when char in '\s\n\t\r' do
+    skip_whitespace(rest)
+  end
+
+  defp skip_whitespace(string), do: string
+
+  ## Errors
+
+  defp syntax_error(<< token :: utf8, _ :: binary >>) do
+    throw({ :invalid, << token >> })
+  end
+
+  defp syntax_error(_) do
+    throw(:invalid)
+  end
 end

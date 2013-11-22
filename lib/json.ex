@@ -21,19 +21,11 @@ defmodule JSON do
   defdelegate encode(data), to: JSON.Encode, as: :it
   defdelegate encode(data, options), to: JSON.Encode, as: :it
 
-  @spec decode!(term, Keyword.t) :: term | no_return
-  def decode!(string, options // []) do
-    case decode(string, options) do
-      { :ok, result } ->
-        result
-
-      { :error, error } ->
-        raise ArgumentError, message: error
-    end
-  end
-
   defdelegate decode(string), to: JSON.Decode, as: :it
   defdelegate decode(string, options), to: JSON.Decode, as: :it
+
+  defdelegate decode!(string), to: JSON.Decode, as: :it!
+  defdelegate decode!(string, options), to: JSON.Decode, as: :it!
 
   defdelegate transform(data), to: JSON.Decode
   defdelegate transform(data, options), to: JSON.Decode
