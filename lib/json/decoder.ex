@@ -14,8 +14,8 @@ defmodule JSON.Decode do
       { :ok, parsed } ->
         { :ok, transform(parsed, options) }
 
-      { :error, _ } = e ->
-        e
+      error ->
+        error
     end
   end
 
