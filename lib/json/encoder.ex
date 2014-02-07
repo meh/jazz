@@ -8,7 +8,7 @@
 
 defmodule JSON.Encode do
   @spec it(term, Keyword.t) :: String.t
-  def it(data, options // []) do
+  def it(data, options \\ []) do
     case JSON.Encoder.to_json(data, options) do
       { encode } when encode |> is_binary ->
         { :ok, encode }

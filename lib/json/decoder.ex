@@ -9,7 +9,7 @@
 defmodule JSON.Decode do
   @spec it(String.t)            :: { :ok, term } | { :error, term }
   @spec it(String.t, Keyword.t) :: { :ok, term } | { :error, term }
-  def it(string, options // []) when string |> is_binary do
+  def it(string, options \\ []) when string |> is_binary do
     case JSON.Parser.parse(string) do
       { :ok, parsed } ->
         { :ok, transform(parsed, options) }
@@ -21,13 +21,13 @@ defmodule JSON.Decode do
 
   @spec it!(String.t)            :: term | no_return
   @spec it!(String.t, Keyword.t) :: term | no_return
-  def it!(string, options // []) when string |> is_binary do
+  def it!(string, options \\ []) when string |> is_binary do
     JSON.Parser.parse!(string) |> transform(options)
   end
 
   @spec transform(term) :: term
   @spec transform(term, Keyword.t) :: term
-  def transform(parsed, options // [])
+  def transform(parsed, options \\ [])
 
   def transform(parsed, [keys: :atoms]) when parsed |> is_list do
     Enum.map parsed, fn

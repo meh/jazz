@@ -8,7 +8,7 @@
 
 defmodule JSON do
   @spec encode!(term, Keyword.t) :: String.t | no_return
-  def encode!(data, options // []) do
+  def encode!(data, options \\ []) do
     case encode(data, options) do
       { :ok, result } ->
         result
