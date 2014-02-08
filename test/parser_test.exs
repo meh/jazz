@@ -41,6 +41,7 @@ defmodule ParserTest do
     assert parse!(%s("\\u2603")) == "☃"
     assert parse!(%s("\\u2028\\u2029")) == "\x{2028}\x{2029}"
     assert parse!(%s("\\uD834\\uDD1E")) == "𝄞"
+    assert parse!(%s("✔︎")) == "✔︎"
   end
 
   test "objects" do

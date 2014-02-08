@@ -241,7 +241,7 @@ defmodule JSON.Parser do
 
   defp string_chunk_size(_, acc), do: acc
 
-  defp string_codepoint_size(codepoint) when codepoint < 0x8000,  do: 2
+  defp string_codepoint_size(codepoint) when codepoint < 0x800,   do: 2
   defp string_codepoint_size(codepoint) when codepoint < 0x10000, do: 3
   defp string_codepoint_size(_),                                  do: 4
 
