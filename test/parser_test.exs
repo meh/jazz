@@ -33,31 +33,31 @@ defmodule ParserTest do
   end
 
   test "strings" do
-    assert_raise SyntaxError, fn -> parse!(%s(")) end
-    assert_raise SyntaxError, fn -> parse!(%s("\\")) end
-    assert_raise SyntaxError, fn -> parse!(%s("\\k")) end
+    assert_raise SyntaxError, fn -> parse!(~s(")) end
+    assert_raise SyntaxError, fn -> parse!(~s("\\")) end
+    assert_raise SyntaxError, fn -> parse!(~s("\\k")) end
 
-    assert parse!(%s("\\"\\\\\\/\\b\\f\\n\\r\\t")) == %s("\\/\b\f\n\r\t)
-    assert parse!(%s("\\u2603")) == "☃"
-    assert parse!(%s("\\u2028\\u2029")) == "\x{2028}\x{2029}"
-    assert parse!(%s("\\uD834\\uDD1E")) == "𝄞"
-    assert parse!(%s("✔︎")) == "✔︎"
+    assert parse!(~s("\\"\\\\\\/\\b\\f\\n\\r\\t")) == ~s("\\/\b\f\n\r\t)
+    assert parse!(~s("\\u2603")) == "☃"
+    assert parse!(~s("\\u2028\\u2029")) == "\x{2028}\x{2029}"
+    assert parse!(~s("\\uD834\\uDD1E")) == "𝄞"
+    assert parse!(~s("✔︎")) == "✔︎"
   end
 
   test "objects" do
     assert_raise SyntaxError, fn -> parse!("{") end
     assert_raise SyntaxError, fn -> parse!("{,") end
-    assert_raise SyntaxError, fn -> parse!(%s({"foo"})) end
-    assert_raise SyntaxError, fn -> parse!(%s({"foo": "bar",})) end
+    assert_raise SyntaxError, fn -> parse!(~s({"foo"})) end
+    assert_raise SyntaxError, fn -> parse!(~s({"foo": "bar",})) end
 
     assert parse!("{}") == []
-    assert parse!(%s({"foo": "bar"})) == [{ "foo", "bar" }]
+    assert parse!(~s({"foo": "bar"})) == [{ "foo", "bar" }]
 
     expected = [{ "foo", "bar" }, { "baz", "quux" }]
-    assert parse!(%s({"foo": "bar", "baz": "quux"})) == expected
+    assert parse!(~s({"foo": "bar", "baz": "quux"})) == expected
 
     expected = [{ "foo", [{ "bar", "baz" }] }]
-    assert parse!(%s({"foo": {"bar": "baz"}})) == expected
+    assert parse!(~s({"foo": {"bar": "baz"}})) == expected
   end
 
   test "arrays" do
@@ -66,8 +66,8 @@ defmodule ParserTest do
 
     assert parse!("[]") == []
     assert parse!("[1, 2, 3]") == [1, 2, 3]
-    assert parse!(%s(["foo", "bar", "baz"])) == ["foo", "bar", "baz"]
-    assert parse!(%s([{"foo": "bar"}])) == [[{ "foo", "bar" }]]
+    assert parse!(~s(["foo", "bar", "baz"])) == ["foo", "bar", "baz"]
+    assert parse!(~s([{"foo": "bar"}])) == [[{ "foo", "bar" }]]
   end
 
   test "whitespace" do
@@ -80,6 +80,6 @@ defmodule ParserTest do
     assert parse!("  [  1  ,  2  ,  3  ]  ") == [1, 2, 3]
 
     expected = [{ "foo", "bar" }, { "baz", "quux" }]
-    assert parse!(%s(  {  "foo"  :  "bar"  ,  "baz"  :  "quux"  }  )) == expected
+    assert parse!(~s(  {  "foo"  :  "bar"  ,  "baz"  :  "quux"  }  )) == expected
   end
 end
