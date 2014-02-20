@@ -36,7 +36,7 @@ defmodule JSON.Parser do
       { :error, :invalid, token }
   end
 
-  @spec parse(String.t) :: t
+  @spec parse!(String.t) :: t
   def parse!(string) do
     case parse(string) do
       { :ok, value } ->
