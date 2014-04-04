@@ -6,11 +6,11 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule JSON.Decode do
+defmodule Jazz.Decode do
   @spec it(String.t)            :: { :ok, term } | { :error, term }
   @spec it(String.t, Keyword.t) :: { :ok, term } | { :error, term }
   def it(string, options \\ []) when string |> is_binary do
-    case JSON.Parser.parse(string) do
+    case Jazz.Parser.parse(string) do
       { :ok, parsed } ->
         { :ok, transform(parsed, options) }
 
@@ -22,7 +22,7 @@ defmodule JSON.Decode do
   @spec it!(String.t)            :: term | no_return
   @spec it!(String.t, Keyword.t) :: term | no_return
   def it!(string, options \\ []) when string |> is_binary do
-    JSON.Parser.parse!(string) |> transform(options)
+    Jazz.Parser.parse!(string) |> transform(options)
   end
 
   @spec transform(term) :: term
@@ -70,11 +70,11 @@ defmodule JSON.Decode do
 
     case Keyword.fetch!(options, :as) do
       as when as |> is_atom ->
-        JSON.Decoder.from_json({ as, parsed, options })
+        Jazz.Decoder.from_json({ as, parsed, options })
 
       [as] when as |> is_atom ->
         Enum.map parsed, fn parsed ->
-          JSON.Decoder.from_json({ as, parsed, options })
+          Jazz.Decoder.from_json({ as, parsed, options })
         end
 
       as when as |> is_list ->
@@ -107,23 +107,23 @@ defmodule JSON.Decode do
   end
 end
 
-defprotocol JSON.Decoder do
+defprotocol Jazz.Decoder do
   def from_json(data)
 end
 
-defimpl JSON.Decoder, for: Tuple do
+defimpl Jazz.Decoder, for: Tuple do
   def from_json({ name, parsed, _ }) do
     name.new(parsed)
   end
 end
 
-defimpl JSON.Decoder, for: HashDict do
+defimpl Jazz.Decoder, for: HashDict do
   def from_json({ _, parsed, _ }) do
     HashDict.new(parsed)
   end
 end
 
-defimpl JSON.Decoder, for: HashSet do
+defimpl Jazz.Decoder, for: HashSet do
   def from_json({ _, parsed, _ }) do
     HashSet.new(parsed)
   end

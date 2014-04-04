@@ -1,6 +1,7 @@
 defmodule ParserTest do
   use ExUnit.Case
 
+  use Jazz
   import JSON.Parser
   alias JSON.SyntaxError
 

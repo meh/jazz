@@ -6,10 +6,10 @@
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule JSON.Encode do
+defmodule Jazz.Encode do
   @spec it(term, Keyword.t) :: String.t
   def it(data, options \\ []) do
-    case JSON.Encoder.to_json(data, options) do
+    case Jazz.Encoder.to_json(data, options) do
       { encode } when encode |> is_binary ->
         { :ok, encode }
 
@@ -19,11 +19,11 @@ defmodule JSON.Encode do
   end
 end
 
-defprotocol JSON.Encoder do
+defprotocol Jazz.Encoder do
   def to_json(self, options)
 end
 
-defimpl JSON.Encoder, for: List do
+defimpl Jazz.Encoder, for: List do
   @compile { :inline, offset: 1, offset: 2, indentation: 1, spaces: 1 }
 
   defp offset(options) do
@@ -75,8 +75,8 @@ defimpl JSON.Encoder, for: List do
     indent = indentation(options)
 
     [first | rest] = Enum.map self, fn { name, value } ->
-      name  = JSON.encode!(to_string(name))
-      value = JSON.encode!(value, offset(options, indent))
+      name  = Jazz.encode!(to_string(name))
+      value = Jazz.encode!(value, offset(options, indent))
 
       [",\n", spaces(indent), name, ": ", value]
     end
@@ -86,7 +86,7 @@ defimpl JSON.Encoder, for: List do
 
   defp encode_object(self, options, pretty) when pretty == false or pretty == nil do
     [first | rest] = Enum.map self, fn { name, value } ->
-      [",", JSON.encode!(to_string(name)), ":", JSON.encode!(value, options)]
+      [",", Jazz.encode!(to_string(name)), ":", Jazz.encode!(value, options)]
     end
 
     ["{", tl(first), rest, "}"] |> iolist_to_binary
@@ -94,7 +94,7 @@ defimpl JSON.Encoder, for: List do
 
   defp encode_array(self, options, pretty) when pretty == true do
     [first | rest] = Enum.map self, fn element ->
-      [", ", JSON.encode!(element, options)]
+      [", ", Jazz.encode!(element, options)]
     end
 
     ["[", tl(first), rest, "]"] |> iolist_to_binary
@@ -102,14 +102,14 @@ defimpl JSON.Encoder, for: List do
 
   defp encode_array(self, options, pretty) when pretty == false or pretty == nil do
     [first | rest] = Enum.map self, fn element ->
-      [",", JSON.encode!(element, options)]
+      [",", Jazz.encode!(element, options)]
     end
 
     ["[", tl(first), rest, "]"] |> iolist_to_binary
   end
 end
 
-defimpl JSON.Encoder, for: Atom do
+defimpl Jazz.Encoder, for: Atom do
   def to_json(true, _) do
     { "true" }
   end
@@ -127,7 +127,7 @@ defimpl JSON.Encoder, for: Atom do
   end
 end
 
-defimpl JSON.Encoder, for: BitString do
+defimpl Jazz.Encoder, for: BitString do
   def to_json(self, options) do
     mode = options[:mode]
 
@@ -197,25 +197,25 @@ defimpl JSON.Encoder, for: BitString do
   defp pad([_, _, _, _] = s), do: s
 end
 
-defimpl JSON.Encoder, for: [Integer, Float] do
+defimpl Jazz.Encoder, for: [Integer, Float] do
   def to_json(self, _) do
     { to_string(self) }
   end
 end
 
-defimpl JSON.Encoder, for: Tuple do
+defimpl Jazz.Encoder, for: Tuple do
   def to_json(self, _options) do
     self.to_keywords
   end
 end
 
-defimpl JSON.Encoder, for: HashDict do
+defimpl Jazz.Encoder, for: HashDict do
   def to_json(self, _options) do
     HashDict.to_list(self)
   end
 end
 
-defimpl JSON.Encoder, for: HashSet do
+defimpl Jazz.Encoder, for: HashSet do
   def to_json(self, _options) do
     HashSet.to_list(self)
   end

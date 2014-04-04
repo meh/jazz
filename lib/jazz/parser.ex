@@ -1,4 +1,4 @@
-defexception JSON.SyntaxError, token: nil do
+defexception Jazz.SyntaxError, token: nil do
   def message(__MODULE__[token: token]) do
     if token do
       "Unexpected token: #{token}"
@@ -8,16 +8,16 @@ defexception JSON.SyntaxError, token: nil do
   end
 end
 
-defmodule JSON.Parser do
+defmodule Jazz.Parser do
   @moduledoc """
-  An ECMA 404 conforming JSON parser.
+  An ECMA 404 conforming Jazz parser.
 
   See: http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
   """
 
   @compile :native
 
-  alias JSON.SyntaxError
+  alias Jazz.SyntaxError
 
   @type t :: float | integer | String.t | Keyword.t
 

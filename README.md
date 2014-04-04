@@ -6,6 +6,8 @@ Examples
 --------
 
 ```elixir
+use Jazz
+
 JSON.encode!([name: "David", surname: "Davidson"])
   |> IO.puts # => {"name":"David","surname":"Davidson"}
 
@@ -45,8 +47,3 @@ JSON.encode!(HashDict.new([name: "David", surname: "Davidson"]))
 JSON.decode!(%S/{"name":"David","surname":"Davidson"}/, as: HashDict)
   |> IO.inspect # => #HashDict<[{"name", "David" }, { "surname", "Davidson" }]>
 ```
-
-Why yet another JSON library?
------------------------------
-Because I need it and I need it with these features, like it? Use it. Don't
-like it? Don't use it.
