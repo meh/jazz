@@ -14,7 +14,7 @@ defmodule DecoderTest do
   end
 
   defimpl JSON.Decoder, for: Bar do
-    def from_json({ _, parsed, _ }) do
+    def from_json(_, parsed, _) do
       [a, b] = parsed["data"]
 
       Bar[a: a, b: b]

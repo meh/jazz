@@ -208,15 +208,3 @@ defimpl Jazz.Encoder, for: Tuple do
     self.to_keywords
   end
 end
-
-defimpl Jazz.Encoder, for: HashDict do
-  def to_json(self, _options) do
-    HashDict.to_list(self)
-  end
-end
-
-defimpl Jazz.Encoder, for: HashSet do
-  def to_json(self, _options) do
-    HashSet.to_list(self)
-  end
-end

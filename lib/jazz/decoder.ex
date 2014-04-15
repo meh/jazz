@@ -70,11 +70,11 @@ defmodule Jazz.Decode do
 
     case Keyword.fetch!(options, :as) do
       as when as |> is_atom ->
-        Jazz.Decoder.from_json({ as, parsed, options })
+        Jazz.Decoder.from_json(as.new, parsed, options)
 
       [as] when as |> is_atom ->
         Enum.map parsed, fn parsed ->
-          Jazz.Decoder.from_json({ as, parsed, options })
+          Jazz.Decoder.from_json(as.new, parsed, options)
         end
 
       as when as |> is_list ->
@@ -108,23 +108,11 @@ defmodule Jazz.Decode do
 end
 
 defprotocol Jazz.Decoder do
-  def from_json(data)
+  def from_json(new, parsed, options)
 end
 
 defimpl Jazz.Decoder, for: Tuple do
-  def from_json({ name, parsed, _ }) do
-    name.new(parsed)
-  end
-end
-
-defimpl Jazz.Decoder, for: HashDict do
-  def from_json({ _, parsed, _ }) do
-    HashDict.new(parsed)
-  end
-end
-
-defimpl Jazz.Decoder, for: HashSet do
-  def from_json({ _, parsed, _ }) do
-    HashSet.new(parsed)
+  def from_json(new, parsed, _) do
+    new.update(parsed)
   end
 end
