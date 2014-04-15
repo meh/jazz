@@ -36,7 +36,7 @@ defimpl JSON.Encoder, for: HashDict do
 end
 
 defimpl JSON.Decoder, for: HashDict do
-  def from_json({ _, parsed, _ }) do
+  def from_json(_new, parsed, _options) do
     HashDict.new(parsed)
   end
 end
