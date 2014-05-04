@@ -30,7 +30,7 @@ defmodule Jazz.Decode do
   def transform(parsed, options \\ [])
 
   def transform(parsed, [keys: :atoms]) when parsed |> is_list do
-    Enum.map parsed, fn
+    Enum.map(parsed, fn
       elem when elem |> is_list ->
         transform(elem, keys: :atoms)
 
@@ -42,11 +42,11 @@ defmodule Jazz.Decode do
 
       value ->
         value
-    end
+    end)|> Enum.into %{}
   end
 
   def transform(parsed, [keys: :atoms!]) when parsed |> is_list do
-    Enum.map parsed, fn
+    Enum.map(parsed, fn
       elem when elem |> is_list ->
         transform(elem, keys: :atoms!)
 
@@ -58,11 +58,11 @@ defmodule Jazz.Decode do
 
       value ->
         value
-    end
+    end) |> Enum.into %{}
   end
 
   def transform(parsed, []) do
-    parsed
+    parsed |> Enum.into %{}
   end
 
   def transform(parsed, options) do
@@ -70,11 +70,11 @@ defmodule Jazz.Decode do
 
     case Keyword.fetch!(options, :as) do
       as when as |> is_atom ->
-        Jazz.Decoder.from_json(as.new, parsed, options)
+        Jazz.Decoder.from_json(as.__struct__, parsed, options)
 
       [as] when as |> is_atom ->
         Enum.map parsed, fn parsed ->
-          Jazz.Decoder.from_json(as.new, parsed, options)
+          Jazz.Decoder.from_json(as.__struct__, parsed, options)
         end
 
       as when as |> is_list ->
@@ -109,10 +109,4 @@ end
 
 defprotocol Jazz.Decoder do
   def from_json(new, parsed, options)
-end
-
-defimpl Jazz.Decoder, for: Tuple do
-  def from_json(new, parsed, _) do
-    new.update(parsed)
-  end
 end

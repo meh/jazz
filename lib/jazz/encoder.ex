@@ -23,54 +23,70 @@ defprotocol Jazz.Encoder do
   def to_json(self, options)
 end
 
+defmodule Jazz.Pretty do
+  defmacro __using__(_opts) do
+    quote do
+      @compile { :inline, offset: 1, offset: 2, indentation: 1, spaces: 1 }
+
+      defp offset(options) do
+        Keyword.get(options, :offset, 0)
+      end
+
+      defp offset(options, value) do
+        Keyword.put(options, :offset, value)
+      end
+
+      defp indentation(options) do
+        Keyword.get(options, :indent, 4) + Keyword.get(options, :offset, 0)
+      end
+
+      defp spaces(number) do
+        String.duplicate(" ", number)
+      end
+    end
+  end
+end
+
 defimpl Jazz.Encoder, for: List do
-  @compile { :inline, offset: 1, offset: 2, indentation: 1, spaces: 1 }
-
-  defp offset(options) do
-    Keyword.get(options, :offset, 0)
-  end
-
-  defp offset(options, value) do
-    Keyword.put(options, :offset, value)
-  end
-
-  defp indentation(options) do
-    Keyword.get(options, :indent, 4) + Keyword.get(options, :offset, 0)
-  end
-
-  defp spaces(number) do
-    String.duplicate(" ", number)
-  end
-
-  defp object?([{ head, _ } | _]) when not is_binary(head) and not is_atom(head) do
-    false
-  end
-
-  defp object?([{ _, _ } | rest]) do
-    object?(rest)
-  end
-
-  defp object?([]) do
-    true
-  end
-
-  defp object?(_) do
-    false
-  end
+  use Jazz.Pretty
 
   def to_json([], _) do
     { "[]" }
   end
 
   def to_json(self, options) do
-    { if object?(self) do
-      encode_object(self, options, options[:pretty])
-    else
-      encode_array(self, options, options[:pretty])
-    end }
+    { encode(self, options, options[:pretty]) }
   end
 
-  defp encode_object(self, options, pretty) when pretty == true do
+  defp encode(self, options, pretty) when pretty == true do
+    [first | rest] = Enum.map self, fn element ->
+      [", ", Jazz.encode!(element, options)]
+    end
+
+    ["[", tl(first), rest, "]"] |> iodata_to_binary
+  end
+
+  defp encode(self, options, pretty) when pretty == false or pretty == nil do
+    [first | rest] = Enum.map self, fn element ->
+      [",", Jazz.encode!(element, options)]
+    end
+
+    ["[", tl(first), rest, "]"] |> iodata_to_binary
+  end
+end
+
+defimpl Jazz.Encoder, for: Map do
+  use Jazz.Pretty
+
+  def to_json(self, _) when map_size(self) == 0 do
+    { "{}" }
+  end
+
+  def to_json(self, options) do
+    { encode(self, options, options[:pretty]) }
+  end
+
+  defp encode(self, options, pretty) when pretty == true do
     offset = offset(options)
     indent = indentation(options)
 
@@ -81,31 +97,15 @@ defimpl Jazz.Encoder, for: List do
       [",\n", spaces(indent), name, ": ", value]
     end
 
-    ["{\n", tl(first), rest, "\n", spaces(offset), "}"] |> iolist_to_binary
+    ["{\n", tl(first), rest, "\n", spaces(offset), "}"] |> iodata_to_binary
   end
 
-  defp encode_object(self, options, pretty) when pretty == false or pretty == nil do
+  defp encode(self, options, pretty) when pretty == false or pretty == nil do
     [first | rest] = Enum.map self, fn { name, value } ->
       [",", Jazz.encode!(to_string(name)), ":", Jazz.encode!(value, options)]
     end
 
-    ["{", tl(first), rest, "}"] |> iolist_to_binary
-  end
-
-  defp encode_array(self, options, pretty) when pretty == true do
-    [first | rest] = Enum.map self, fn element ->
-      [", ", Jazz.encode!(element, options)]
-    end
-
-    ["[", tl(first), rest, "]"] |> iolist_to_binary
-  end
-
-  defp encode_array(self, options, pretty) when pretty == false or pretty == nil do
-    [first | rest] = Enum.map self, fn element ->
-      [",", Jazz.encode!(element, options)]
-    end
-
-    ["[", tl(first), rest, "]"] |> iolist_to_binary
+    ["{", tl(first), rest, "}"] |> iodata_to_binary
   end
 end
 
@@ -121,10 +121,6 @@ defimpl Jazz.Encoder, for: Atom do
   def to_json(nil, _) do
     { "null" }
   end
-
-  def to_json(self, _) do
-    atom_to_binary(self)
-  end
 end
 
 defimpl Jazz.Encoder, for: BitString do
@@ -138,7 +134,7 @@ defimpl Jazz.Encoder, for: BitString do
       end
     end
 
-    { [?", encode(self, mode), ?"] |> String.from_char_list! }
+    { [?", encode(self, mode), ?"] |> String.from_char_data! }
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x20 .. 0x21 or
@@ -200,11 +196,5 @@ end
 defimpl Jazz.Encoder, for: [Integer, Float] do
   def to_json(self, _) do
     { to_string(self) }
-  end
-end
-
-defimpl Jazz.Encoder, for: Tuple do
-  def to_json(self, _options) do
-    self.to_keywords
   end
 end
