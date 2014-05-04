@@ -4,20 +4,25 @@ defmodule DecoderTest do
   use ExUnit.Case, async: true
   use Jazz
 
-  defrecord Foo, [:a, :b]
-  defrecord Bar, [:a, :b]
+  defmodule Foo do
+    defstruct [:a, :b]
+  end
+
+  defmodule Bar do
+    defstruct [:a, :b]
+  end
 
   defimpl JSON.Encoder, for: Bar do
-    def to_json(Bar[a: a, b: b], _) do
-      [data: [a, b]]
+    def to_json(%Bar{a: a, b: b}, _) do
+      %{data: [a, b]}
     end
   end
 
   defimpl JSON.Decoder, for: Bar do
-    def from_json(_, parsed, _) do
-      [a, b] = parsed["data"]
+    def from_json(new, parsed, _) do
+      [a, b] = parsed |> Map.get("data")
 
-      Bar[a: a, b: b]
+      %Bar{new | a: a, b: b}
     end
   end
 
@@ -38,35 +43,35 @@ defmodule DecoderTest do
   end
 
   test "decodes objects correctly" do
-    assert JSON.decode!(~S/{"lol":"wut"}/, keys: :atoms)         == [lol: "wut"]
-    assert JSON.decode!(~S/{"lol":{"omg":"wut"}}/, keys: :atoms) == [lol: [omg: "wut"]]
+    assert JSON.decode!(~S/{"lol":"wut"}/, keys: :atoms)         == %{lol: "wut"}
+    assert JSON.decode!(~S/{"lol":{"omg":"wut"}}/, keys: :atoms) == %{lol: %{omg: "wut"}}
   end
 
   test "decodes arrays correctly" do
-    assert JSON.decode!(~S/[1,2,3]/)                       == [1, 2, 3]
-    assert JSON.decode!(~S/[{"lol":"wut"},{"omg":"wut"}]/, keys: :atoms) == [[lol: "wut"], [omg: "wut"]]
+    assert JSON.decode!(~S/[1,2,3]/)                                     == [1, 2, 3]
+    assert JSON.decode!(~S/[{"lol":"wut"},{"omg":"wut"}]/, keys: :atoms) == [%{lol: "wut"}, %{omg: "wut"}]
   end
 
   test "decodes records correctly" do
-    assert JSON.decode!(~S/{"a":2,"b":3}/, as: Foo)  == Foo[a: 2, b: 3]
-    assert JSON.decode!(~S/{"data":[2,3]}/, as: Bar) == Bar[a: 2, b: 3]
+    assert JSON.decode!(~S/{"a":2,"b":3}/, as: Foo)  == %Foo{a: 2, b: 3}
+    assert JSON.decode!(~S/{"data":[2,3]}/, as: Bar) == %Bar{a: 2, b: 3}
   end
 
   test "decodes nested as" do
     decoded = JSON.decode!(~S/{"foo": {"a": 2, "b": 3}, "bar": {"data": [2, 3]}, "baz": 23}/,
       as: [foo: Foo, bar: Bar])
 
-    assert decoded["foo"] == Foo[a: 2, b: 3]
-    assert decoded["bar"] == Bar[a: 2, b: 3]
-    assert decoded["baz"] == 23
+    assert decoded |> Map.get("foo") == %Foo{a: 2, b: 3}
+    assert decoded |> Map.get("bar") == %Bar{a: 2, b: 3}
+    assert decoded |> Map.get("baz") == 23
   end
 
   test "decodes nested as with keys" do
     decoded = JSON.decode!(~S/{"foo": {"a": 2, "b": 3}, "bar": {"data": [2, 3]}, "baz": 23}/,
       as: [foo: Foo, bar: Bar], keys: :atoms)
 
-    assert decoded[:foo] == Foo[a: 2, b: 3]
-    assert decoded[:bar] == Bar[a: 2, b: 3]
-    assert decoded[:baz] == 23
+    assert decoded.foo == %Foo{a: 2, b: 3}
+    assert decoded.bar == %Bar{a: 2, b: 3}
+    assert decoded.baz == 23
   end
 end

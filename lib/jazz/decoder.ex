@@ -29,62 +29,72 @@ defmodule Jazz.Decode do
   @spec transform(term, Keyword.t) :: term
   def transform(parsed, options \\ [])
 
+  def transform(parsed, []) do
+    parsed
+  end
+
+  def transform(parsed, [keys: :atoms]) when parsed |> is_map do
+    for { key, value } <- parsed, into: %{} do
+      if value |> is_list or value |> is_map do
+        value = transform(value, keys: :atoms)
+      end
+
+      { binary_to_atom(key), value }
+    end
+  end
+
   def transform(parsed, [keys: :atoms]) when parsed |> is_list do
-    Enum.map(parsed, fn
-      elem when elem |> is_list ->
-        transform(elem, keys: :atoms)
+    for value <- parsed do
+      if value |> is_list or value |> is_map do
+        value = transform(value, keys: :atoms)
+      end
 
-      { name, value } when value |> is_list ->
-        { binary_to_atom(name), transform(value, keys: :atoms) }
+      value
+    end
+  end
 
-      { name, value } ->
-        { binary_to_atom(name), value }
+  def transform(parsed, [keys: :atoms!]) when parsed |> is_map do
+    for { key, value } <- parsed, into: %{} do
+      if value |> is_list or value |> is_map do
+        value = transform(value, keys: :atoms!)
+      end
 
-      value ->
-        value
-    end)|> Enum.into %{}
+      { binary_to_existing_atom(key), value }
+    end
   end
 
   def transform(parsed, [keys: :atoms!]) when parsed |> is_list do
-    Enum.map(parsed, fn
-      elem when elem |> is_list ->
-        transform(elem, keys: :atoms!)
+    for value <- parsed do
+      if value |> is_list or value |> is_map do
+        value = transform(value, keys: :atoms)
+      end
 
-      { name, value } when is_list(value) ->
-        { binary_to_existing_atom(name), transform(value, keys: :atoms!) }
-
-      { name, value } ->
-        { binary_to_existing_atom(name), value }
-
-      value ->
-        value
-    end) |> Enum.into %{}
-  end
-
-  def transform(parsed, []) do
-    parsed |> Enum.into %{}
+      value
+    end
   end
 
   def transform(parsed, options) do
     keys = options[:keys]
 
-    case Keyword.fetch!(options, :as) do
+    case options[:as] do
       as when as |> is_atom ->
         Jazz.Decoder.from_json(as.__struct__, parsed, options)
 
       [as] when as |> is_atom ->
-        Enum.map parsed, fn parsed ->
+        for parsed <- parsed do
           Jazz.Decoder.from_json(as.__struct__, parsed, options)
         end
 
       as when as |> is_list ->
-        as = Enum.map as, fn { name, value } ->
+        as = for { name, value } <- as do
           { to_string(name), value }
         end
 
-        Enum.map parsed, fn { name, value } ->
+        for { name, value } <- parsed, into: %{} do
           value = cond do
-            spec = as[name] ->
+            spec = as |> List.keyfind(name, 0) ->
+              { _name, spec } = spec
+
               transform(value, Keyword.put(options, :as, spec))
 
             keys && value |> is_list ->
@@ -108,5 +118,13 @@ defmodule Jazz.Decode do
 end
 
 defprotocol Jazz.Decoder do
+  @fallback_to_any true
   def from_json(new, parsed, options)
+end
+
+defimpl Jazz.Decoder, for: Any do
+  def from_json(%{__struct__: _} = new, parsed, _options) do
+    new |> Map.merge for { name, value } <- parsed, into: %{},
+      do: { binary_to_existing_atom(name), value }
+  end
 end

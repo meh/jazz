@@ -73,13 +73,13 @@ defmodule Jazz.Parser do
     acc = [ { name, value } | acc ]
     case skip_whitespace(rest) do
       "," <> rest -> object_pairs(skip_whitespace(rest), acc)
-      "}" <> rest -> { :lists.reverse(acc), rest }
+      "}" <> rest -> { Enum.into(acc, %{}), rest }
       other -> syntax_error(other)
     end
   end
 
   defp object_pairs("}" <> rest, []) do
-    { [], rest }
+    { %{}, rest }
   end
 
   defp object_pairs(other, _), do: syntax_error(other)
@@ -198,7 +198,7 @@ defmodule Jazz.Parser do
     string_continue(rest, [ acc, chunk ])
   end
 
-  lc { seq, char } inlist Enum.zip('"ntr\\/fb', '"\n\t\r\\/\f\b') do
+  for { seq, char } <- Enum.zip('"ntr\\/fb', '"\n\t\r\\/\f\b') do
     defp string_escape(<< unquote(seq), rest :: binary >>, acc) do
       string_continue(rest, [ acc, unquote(char) ])
     end

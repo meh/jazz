@@ -20,6 +20,8 @@ defmodule Jazz.Encode do
 end
 
 defprotocol Jazz.Encoder do
+  @fallback_to_any true
+
   def to_json(self, options)
 end
 
@@ -106,6 +108,12 @@ defimpl Jazz.Encoder, for: Map do
     end
 
     ["{", tl(first), rest, "}"] |> iodata_to_binary
+  end
+end
+
+defimpl Jazz.Encoder, for: Any do
+  def to_json(%{__struct__: _} = self, options) do
+    Jazz.Encoder.Map.to_json(self |> Map.delete(:__struct__), options)
   end
 end
 

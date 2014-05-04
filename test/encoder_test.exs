@@ -4,12 +4,17 @@ defmodule EncoderTest do
   use ExUnit.Case, async: true
   use Jazz
 
-  defrecord Foo, [:a, :b]
-  defrecord Bar, [:a, :b]
+  defmodule Foo do
+    defstruct [:a, :b]
+  end
+
+  defmodule Bar do
+    defstruct [:a, :b]
+  end
 
   defimpl JSON.Encoder, for: Bar do
-    def to_json(Bar[a: a, b: b], _) do
-      [data: [a, b]]
+    def to_json(%Bar{a: a, b: b}, _) do
+      %{data: [a, b]}
     end
   end
 
@@ -30,17 +35,17 @@ defmodule EncoderTest do
   end
 
   test "encodes objects correctly" do
-    assert JSON.encode!([lol: "wut"])        == ~S/{"lol":"wut"}/
-    assert JSON.encode!([lol: [omg: "wut"]]) == ~S/{"lol":{"omg":"wut"}}/
+    assert JSON.encode!(%{lol: "wut"})        == ~S/{"lol":"wut"}/
+    assert JSON.encode!(%{lol: %{omg: "wut"}}) == ~S/{"lol":{"omg":"wut"}}/
   end
 
   test "encodes arrays correctly" do
-    assert JSON.encode!([1, 2, 3])                    == ~S/[1,2,3]/
-    assert JSON.encode!([[lol: "wut"], [omg: "wut"]]) == ~S/[{"lol":"wut"},{"omg":"wut"}]/
+    assert JSON.encode!([1, 2, 3])                      == ~S/[1,2,3]/
+    assert JSON.encode!([%{lol: "wut"}, %{omg: "wut"}]) == ~S/[{"lol":"wut"},{"omg":"wut"}]/
   end
 
   test "encodes records correctly" do
-    assert JSON.encode!(Foo[a: 2, b: 3]) == ~S/{"a":2,"b":3}/
-    assert JSON.encode!(Bar[a: 2, b: 3]) == ~S/{"data":[2,3]}/
+    assert JSON.encode!(%Foo{a: 2, b: 3}) == ~S/{"a":2,"b":3}/
+    assert JSON.encode!(%Bar{a: 2, b: 3}) == ~S/{"data":[2,3]}/
   end
 end
