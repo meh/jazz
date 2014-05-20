@@ -1,10 +1,14 @@
-defexception Jazz.SyntaxError, token: nil do
-  def message(__MODULE__[token: token]) do
-    if token do
-      "Unexpected token: #{token}"
+defmodule Jazz.SyntaxError do
+  defexception [:message, :token]
+
+  def exception(opts) do
+    if token = opts[:token] do
+      message = "Unexpected token: #{token}"
     else
-      "Unexpected end of input"
+      message = "Unexpected end of input"
     end
+
+    %Jazz.SyntaxError{message: message, token: token}
   end
 end
 
