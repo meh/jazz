@@ -19,7 +19,7 @@ defmodule Jazz.Parser do
   See: http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
   """
 
-  @compile :native
+  if Application.get_env(:jazz, :native), do: @compile :native
 
   alias Jazz.SyntaxError
 
