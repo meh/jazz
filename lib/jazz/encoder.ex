@@ -142,7 +142,7 @@ defimpl Jazz.Encoder, for: BitString do
       end
     end
 
-    { [?", encode(self, mode), ?"] |> String.from_char_data! }
+    { [?", encode(self, mode), ?"] |> List.to_string }
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x20 .. 0x21 or
