@@ -163,11 +163,11 @@ defmodule Jazz.Parser do
   end
 
   defp number_complete(iodata, false) do
-    binary_to_integer(iodata_to_binary(iodata))
+    String.to_integer(IO.iodata_to_binary(iodata))
   end
 
   defp number_complete(iodata, true) do
-    binary_to_float(iodata_to_binary(iodata))
+    String.to_float(IO.iodata_to_binary(iodata))
   end
 
   defp number_digits(<< char, rest :: binary >>) when char in '0123456789' do
@@ -187,7 +187,7 @@ defmodule Jazz.Parser do
   ## Strings
 
   defp string_continue("\"" <> rest, acc) do
-    { iodata_to_binary(acc), rest }
+    { IO.iodata_to_binary(acc), rest }
   end
 
   defp string_continue("\\" <> rest, acc) do
@@ -216,14 +216,14 @@ defmodule Jazz.Parser do
     and (b1 in [?8, ?9, ?a, ?b, ?A, ?B])
     and (b2 in ?c..?f or b2 in ?C..?F) \
   do
-    hi = list_to_integer([ a1, b1, c1, d1 ], 16)
-    lo = list_to_integer([ a2, b2, c2, d2 ], 16)
+    hi = List.to_integer([ a1, b1, c1, d1 ], 16)
+    lo = List.to_integer([ a2, b2, c2, d2 ], 16)
     codepoint = 0x10000 + ((hi - 0xD800) * 0x400) + (lo - 0xDC00)
     string_continue(rest, [ acc, << codepoint :: utf8 >> ])
   end
 
   defp string_escape(<< ?u, seq :: [ binary, size(4) ], rest :: binary >>, acc) do
-    string_continue(rest, [ acc, << binary_to_integer(seq, 16) :: utf8 >> ])
+    string_continue(rest, [ acc, << String.to_integer(seq, 16) :: utf8 >> ])
   end
 
   defp string_escape(other, _), do: syntax_error(other)
