@@ -2,7 +2,7 @@
 #                  Version 2, December 2004
 #
 #          DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-# TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION 
+# TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 #
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 
@@ -39,7 +39,7 @@ defmodule Jazz.Decode do
         value = transform(value, keys: :atoms)
       end
 
-      { binary_to_atom(key), value }
+      { String.to_atom(key), value }
     end
   end
 
@@ -59,7 +59,7 @@ defmodule Jazz.Decode do
         value = transform(value, keys: :atoms!)
       end
 
-      { binary_to_existing_atom(key), value }
+      { String.to_existing_atom(key), value }
     end
   end
 
@@ -106,8 +106,8 @@ defmodule Jazz.Decode do
 
           if keys do
             name = case keys do
-              :atoms  -> binary_to_atom(name)
-              :atoms! -> binary_to_existing_atom(name)
+              :atoms  -> String.to_atom(name)
+              :atoms! -> String.to_existing_atom(name)
             end
           end
 
@@ -125,6 +125,6 @@ end
 defimpl Jazz.Decoder, for: Any do
   def from_json(%{__struct__: _} = new, parsed, _options) do
     new |> Map.merge for { name, value } <- parsed, into: %{},
-      do: { binary_to_existing_atom(name), value }
+      do: { String.to_existing_atom(name), value }
   end
 end
