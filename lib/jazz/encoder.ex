@@ -65,7 +65,7 @@ defimpl Jazz.Encoder, for: List do
       [", ", Jazz.encode!(element, options)]
     end
 
-    ["[", tl(first), rest, "]"] |> iodata_to_binary
+    ["[", tl(first), rest, "]"] |> IO.iodata_to_binary
   end
 
   defp encode(self, options, pretty) when pretty == false or pretty == nil do
@@ -73,7 +73,7 @@ defimpl Jazz.Encoder, for: List do
       [",", Jazz.encode!(element, options)]
     end
 
-    ["[", tl(first), rest, "]"] |> iodata_to_binary
+    ["[", tl(first), rest, "]"] |> IO.iodata_to_binary
   end
 end
 
@@ -99,7 +99,7 @@ defimpl Jazz.Encoder, for: Map do
       [",\n", spaces(indent), name, ": ", value]
     end
 
-    ["{\n", tl(first), rest, "\n", spaces(offset), "}"] |> iodata_to_binary
+    ["{\n", tl(first), rest, "\n", spaces(offset), "}"] |> IO.iodata_to_binary
   end
 
   defp encode(self, options, pretty) when pretty == false or pretty == nil do
@@ -107,7 +107,7 @@ defimpl Jazz.Encoder, for: Map do
       [",", Jazz.encode!(to_string(name)), ":", Jazz.encode!(value, options)]
     end
 
-    ["{", tl(first), rest, "}"] |> iodata_to_binary
+    ["{", tl(first), rest, "}"] |> IO.iodata_to_binary
   end
 end
 
@@ -165,7 +165,7 @@ defimpl Jazz.Encoder, for: BitString do
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, :javascript) when char in [0x2028, 0x2029] do
-    ["\\u", integer_to_list(char, 16) | encode(rest, :javascript)]
+    ["\\u", Integer.to_char_list(char, 16) | encode(rest, :javascript)]
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, :javascript) when char in 0x0000   .. 0xFFFF or
@@ -179,7 +179,7 @@ defimpl Jazz.Encoder, for: BitString do
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x0000 .. 0xFFFF do
-    ["\\u", pad(integer_to_list(char, 16)) | encode(rest, mode)]
+    ["\\u", pad(Integer.to_char_list(char, 16)) | encode(rest, mode)]
   end
 
   defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x010000 .. 0x10FFFF do
@@ -187,8 +187,8 @@ defimpl Jazz.Encoder, for: BitString do
 
     point = char - 0x10000
 
-    ["\\u", pad(integer_to_list(0xD800 + (point >>> 10), 16)),
-     "\\u", pad(integer_to_list(0xDC00 + (point &&& 0x003FF), 16)) | encode(rest, mode)]
+    ["\\u", pad(Integer.to_char_list(0xD800 + (point >>> 10), 16)),
+     "\\u", pad(Integer.to_char_list(0xDC00 + (point &&& 0x003FF), 16)) | encode(rest, mode)]
   end
 
   defp encode("", _) do
