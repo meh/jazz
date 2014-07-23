@@ -172,7 +172,7 @@ defmodule Jazz.Parser do
 
   defp number_digits(<< char, rest :: binary >>) when char in '0123456789' do
     count = number_digits_count(rest, 0)
-    << digits :: [ binary, size(count) ], rest :: binary >> = rest
+    << digits :: binary-size(count), rest :: binary >> = rest
     { char, digits, rest }
   end
 
@@ -198,7 +198,7 @@ defmodule Jazz.Parser do
 
   defp string_continue(string, acc) do
     n = string_chunk_size(string, 0)
-    << chunk :: [ binary, size(n) ], rest :: binary >> = string
+    << chunk :: binary-size(n), rest :: binary >> = string
     string_continue(rest, [ acc, chunk ])
   end
 
@@ -222,7 +222,7 @@ defmodule Jazz.Parser do
     string_continue(rest, [ acc, << codepoint :: utf8 >> ])
   end
 
-  defp string_escape(<< ?u, seq :: [ binary, size(4) ], rest :: binary >>, acc) do
+  defp string_escape(<< ?u, seq :: binary-size(4), rest :: binary >>, acc) do
     string_continue(rest, [ acc, << String.to_integer(seq, 16) :: utf8 >> ])
   end
 
