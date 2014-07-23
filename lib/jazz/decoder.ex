@@ -123,8 +123,13 @@ defprotocol Jazz.Decoder do
 end
 
 defimpl Jazz.Decoder, for: Any do
-  def from_json(%{__struct__: _} = new, parsed, _options) do
-    new |> Map.merge for { name, value } <- parsed, into: %{},
-      do: { String.to_existing_atom(name), value }
+  def from_json(%{__struct__: module} = new, parsed, _options) do
+    for { name, old } <- Map.delete(new, :__struct__), into: %{} do
+      if value = parsed[name |> to_string] do
+        { name, value }
+      else
+        { name, old }
+      end
+    end |> Map.put(:__struct__, module)
   end
 end
