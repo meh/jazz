@@ -13,6 +13,9 @@ defmodule Jazz.Encode do
       { encode } when encode |> is_binary ->
         { :ok, encode }
 
+      %{__struct__: module} ->
+        { :error, :recursive }
+
       value ->
         it(value, options)
     end

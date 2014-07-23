@@ -10,11 +10,21 @@ defmodule EncoderTest do
 
   defmodule Bar do
     defstruct [:a, :b]
+
+    defimpl JSON.Encoder do
+      def to_json(%Bar{a: a, b: b}, _) do
+        %{data: [a, b]}
+      end
+    end
   end
 
-  defimpl JSON.Encoder, for: Bar do
-    def to_json(%Bar{a: a, b: b}, _) do
-      %{data: [a, b]}
+  defmodule Baz do
+    defstruct [:a, :b]
+
+    defimpl JSON.Encoder do
+      def to_json(new, _) do
+        new
+      end
     end
   end
 
@@ -47,5 +57,9 @@ defmodule EncoderTest do
   test "encodes records correctly" do
     assert JSON.encode!(%Foo{a: 2, b: 3}) == ~S/{"a":2,"b":3}/
     assert JSON.encode!(%Bar{a: 2, b: 3}) == ~S/{"data":[2,3]}/
+  end
+
+  test "errors on recursive encoding" do
+    assert JSON.encode(%Baz{}) == { :error, :recursive }
   end
 end
