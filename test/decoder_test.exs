@@ -10,19 +10,19 @@ defmodule DecoderTest do
 
   defmodule Bar do
     defstruct [:a, :b]
-  end
 
-  defimpl JSON.Encoder, for: Bar do
-    def to_json(%Bar{a: a, b: b}, _) do
-      %{data: [a, b]}
+    defimpl JSON.Encoder do
+      def encode(%Bar{a: a, b: b}, _) do
+        %{data: [a, b]}
+      end
     end
-  end
 
-  defimpl JSON.Decoder, for: Bar do
-    def from_json(new, parsed, _) do
-      [a, b] = parsed |> Map.get("data")
+    defimpl JSON.Decoder do
+      def decode(new, parsed, _) do
+        [a, b] = parsed |> Map.get("data")
 
-      %Bar{new | a: a, b: b}
+        %Bar{new | a: a, b: b}
+      end
     end
   end
 

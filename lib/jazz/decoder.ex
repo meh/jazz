@@ -78,11 +78,11 @@ defmodule Jazz.Decode do
 
     case options[:as] do
       as when as |> is_atom ->
-        Jazz.Decoder.from_json(as.__struct__, parsed, options)
+        Jazz.Decoder.decode(as.__struct__, parsed, options)
 
       [as] when as |> is_atom ->
         for parsed <- parsed do
-          Jazz.Decoder.from_json(as.__struct__, parsed, options)
+          Jazz.Decoder.decode(as.__struct__, parsed, options)
         end
 
       as when as |> is_list ->
@@ -119,11 +119,11 @@ end
 
 defprotocol Jazz.Decoder do
   @fallback_to_any true
-  def from_json(new, parsed, options)
+  def decode(new, parsed, options)
 end
 
 defimpl Jazz.Decoder, for: Any do
-  def from_json(%{__struct__: module} = new, parsed, _options) do
+  def decode(%{__struct__: module} = new, parsed, _options) do
     for { name, old } <- Map.delete(new, :__struct__), into: %{} do
       if value = parsed[name |> to_string] do
         { name, value }
