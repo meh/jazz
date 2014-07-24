@@ -12,7 +12,7 @@ defmodule EncoderTest do
     defstruct [:a, :b]
 
     defimpl JSON.Encoder do
-      def to_json(%Bar{a: a, b: b}, _) do
+      def encode(%Bar{a: a, b: b}, _) do
         %{data: [a, b]}
       end
     end
@@ -22,8 +22,8 @@ defmodule EncoderTest do
     defstruct [:a, :b]
 
     defimpl JSON.Encoder do
-      def to_json(new, _) do
-        new
+      def encode(self, _) do
+        self
       end
     end
   end

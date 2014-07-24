@@ -9,11 +9,11 @@
 defmodule Jazz.Encode do
   @spec it(term, Keyword.t) :: String.t
   def it(data, options \\ []) do
-    case Jazz.Encoder.to_json(data, options) do
+    case Jazz.Encoder.encode(data, options) do
       { encode } when encode |> is_binary ->
         { :ok, encode }
 
-      %{__struct__: module} ->
+      %{__struct__: _} ->
         { :error, :recursive }
 
       value ->
@@ -25,7 +25,7 @@ end
 defprotocol Jazz.Encoder do
   @fallback_to_any true
 
-  def to_json(self, options)
+  def encode(self, options)
 end
 
 defmodule Jazz.Pretty do
@@ -55,11 +55,11 @@ end
 defimpl Jazz.Encoder, for: List do
   use Jazz.Pretty
 
-  def to_json([], _) do
+  def encode([], _) do
     { "[]" }
   end
 
-  def to_json(self, options) do
+  def encode(self, options) do
     { encode(self, options, options[:pretty]) }
   end
 
@@ -83,11 +83,11 @@ end
 defimpl Jazz.Encoder, for: Map do
   use Jazz.Pretty
 
-  def to_json(self, _) when map_size(self) == 0 do
+  def encode(self, _) when map_size(self) == 0 do
     { "{}" }
   end
 
-  def to_json(self, options) do
+  def encode(self, options) do
     { encode(self, options, options[:pretty]) }
   end
 
@@ -115,27 +115,27 @@ defimpl Jazz.Encoder, for: Map do
 end
 
 defimpl Jazz.Encoder, for: Any do
-  def to_json(%{__struct__: _} = self, options) do
-    Jazz.Encoder.Map.to_json(self |> Map.delete(:__struct__), options)
+  def encode(%{__struct__: _} = self, options) do
+    Jazz.Encoder.Map.encode(self |> Map.delete(:__struct__), options)
   end
 end
 
 defimpl Jazz.Encoder, for: Atom do
-  def to_json(true, _) do
+  def encode(true, _) do
     { "true" }
   end
 
-  def to_json(false, _) do
+  def encode(false, _) do
     { "false" }
   end
 
-  def to_json(nil, _) do
+  def encode(nil, _) do
     { "null" }
   end
 end
 
 defimpl Jazz.Encoder, for: BitString do
-  def to_json(self, options) do
+  def encode(self, options) do
     mode = options[:mode]
 
     unless mode do
@@ -145,56 +145,56 @@ defimpl Jazz.Encoder, for: BitString do
       end
     end
 
-    { [?", encode(self, mode), ?"] |> List.to_string }
+    { [?", it(self, mode), ?"] |> List.to_string }
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x20 .. 0x21 or
+  defp it(<< char :: utf8, rest :: binary >>, mode) when char in 0x20 .. 0x21 or
                                                              char in 0x23 .. 0x5B or
                                                              char in 0x5D .. 0x7E do
-    [char | encode(rest, mode)]
+    [char | it(rest, mode)]
   end
 
   @escape [?", ?\\, { ?\b, ?b }, { ?\f, ?f }, { ?\n, ?n }, { ?\r, ?r }, { ?\t, ?t }]
   Enum.each @escape, fn
     { match, insert } ->
-      defp encode(<< unquote(match) :: utf8, rest :: binary >>, mode) do
-        [?\\, unquote(insert) | encode(rest, mode)]
+      defp it(<< unquote(match) :: utf8, rest :: binary >>, mode) do
+        [?\\, unquote(insert) | it(rest, mode)]
       end
 
     match ->
-      defp encode(<< unquote(match) :: utf8, rest :: binary >>, mode) do
-        [?\\, unquote(match) | encode(rest, mode)]
+      defp it(<< unquote(match) :: utf8, rest :: binary >>, mode) do
+        [?\\, unquote(match) | it(rest, mode)]
       end
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, :javascript) when char in [0x2028, 0x2029] do
-    ["\\u", Integer.to_char_list(char, 16) | encode(rest, :javascript)]
+  defp it(<< char :: utf8, rest :: binary >>, :javascript) when char in [0x2028, 0x2029] do
+    ["\\u", Integer.to_char_list(char, 16) | it(rest, :javascript)]
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, :javascript) when char in 0x0000   .. 0xFFFF or
+  defp it(<< char :: utf8, rest :: binary >>, :javascript) when char in 0x0000   .. 0xFFFF or
                                                                     char in 0x010000 .. 0x10FFFF do
-    [char | encode(rest, :javascript)]
+    [char | it(rest, :javascript)]
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x0000   .. 0xFFFF or
+  defp it(<< char :: utf8, rest :: binary >>, :unicode) when char in 0x0000   .. 0xFFFF or
                                                                  char in 0x010000 .. 0x10FFFF do
-    [char | encode(rest, :unicode)]
+    [char | it(rest, :unicode)]
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x0000 .. 0xFFFF do
-    ["\\u", pad(Integer.to_char_list(char, 16)) | encode(rest, mode)]
+  defp it(<< char :: utf8, rest :: binary >>, mode) when char in 0x0000 .. 0xFFFF do
+    ["\\u", pad(Integer.to_char_list(char, 16)) | it(rest, mode)]
   end
 
-  defp encode(<< char :: utf8, rest :: binary >>, mode) when char in 0x010000 .. 0x10FFFF do
+  defp it(<< char :: utf8, rest :: binary >>, mode) when char in 0x010000 .. 0x10FFFF do
     use Bitwise
 
     point = char - 0x10000
 
     ["\\u", pad(Integer.to_char_list(0xD800 + (point >>> 10), 16)),
-     "\\u", pad(Integer.to_char_list(0xDC00 + (point &&& 0x003FF), 16)) | encode(rest, mode)]
+     "\\u", pad(Integer.to_char_list(0xDC00 + (point &&& 0x003FF), 16)) | it(rest, mode)]
   end
 
-  defp encode("", _) do
+  defp it("", _) do
     []
   end
 
@@ -205,7 +205,7 @@ defimpl Jazz.Encoder, for: BitString do
 end
 
 defimpl Jazz.Encoder, for: [Integer, Float] do
-  def to_json(self, _) do
+  def encode(self, _) do
     { to_string(self) }
   end
 end
