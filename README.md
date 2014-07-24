@@ -32,13 +32,13 @@ JSON.decode!(~S/{"name":"David","surname":"Davidson"}/, as: Person)
   |> IO.inspect # => %Person{name: "David", surname: "Davidson"}
 
 defimpl JSON.Encoder, for: HashDict do
-  def to_json(self, options) do
+  def encode(self, options) do
     HashDict.to_list(self) |> Enum.into(%{})
   end
 end
 
 defimpl JSON.Decoder, for: HashDict do
-  def from_json(_new, parsed, _options) do
+  def decode(_new, parsed, _options) do
     parsed |> Enum.into(HashDict.new)
   end
 end
