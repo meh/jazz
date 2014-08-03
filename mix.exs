@@ -12,6 +12,6 @@ defmodule Jazz.Mixfile do
   defp package do
     [ contributors: ["meh"],
       licenses: ["WTFPL"],
-      links: [ { "GitHub", "https://github.com/meh/jazz" } ] ]
+      links: %{"GitHub" => "https://github.com/meh/jazz"} ]
   end
 end
