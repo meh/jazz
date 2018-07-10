@@ -2,10 +2,10 @@ defmodule Jazz.SyntaxError do
   defexception [:message, :token]
 
   def exception(opts) do
-    if token = opts[:token] do
-      message = "Unexpected token: #{token}"
+    message = if token = opts[:token] do
+      "Unexpected token: #{token}"
     else
-      message = "Unexpected end of input"
+      "Unexpected end of input"
     end
 
     %Jazz.SyntaxError{message: message, token: token}

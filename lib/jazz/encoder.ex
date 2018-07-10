@@ -33,19 +33,19 @@ defmodule Jazz.Pretty do
     quote do
       @compile { :inline, offset: 1, offset: 2, indentation: 1, spaces: 1 }
 
-      defp offset(options) do
+      def offset(options) do
         Keyword.get(options, :offset, 0)
       end
 
-      defp offset(options, value) do
+      def offset(options, value) do
         Keyword.put(options, :offset, value)
       end
 
-      defp indentation(options) do
+      def indentation(options) do
         Keyword.get(options, :indent, 4) + Keyword.get(options, :offset, 0)
       end
 
-      defp spaces(number) do
+      def spaces(number) do
         String.duplicate(" ", number)
       end
     end
@@ -136,13 +136,13 @@ end
 
 defimpl Jazz.Encoder, for: BitString do
   def encode(self, options) do
-    mode = options[:mode]
-
-    unless mode do
-      mode = case options[:escape] do
+    mode = unless options[:mode] do
+      case options[:escape] do
         nil      -> :unicode
         :unicode -> :ascii
       end
+    else
+      options[:mode]
     end
 
     { [?", it(self, mode), ?"] |> List.to_string }
@@ -168,7 +168,7 @@ defimpl Jazz.Encoder, for: BitString do
   end
 
   defp it(<< char :: utf8, rest :: binary >>, :javascript) when char in [0x2028, 0x2029] do
-    ["\\u", Integer.to_char_list(char, 16) | it(rest, :javascript)]
+    ["\\u", Integer.to_charlist(char, 16) | it(rest, :javascript)]
   end
 
   defp it(<< char :: utf8, rest :: binary >>, :javascript) when char in 0x0000   .. 0xFFFF or
@@ -182,7 +182,7 @@ defimpl Jazz.Encoder, for: BitString do
   end
 
   defp it(<< char :: utf8, rest :: binary >>, mode) when char in 0x0000 .. 0xFFFF do
-    ["\\u", pad(Integer.to_char_list(char, 16)) | it(rest, mode)]
+    ["\\u", pad(Integer.to_charlist(char, 16)) | it(rest, mode)]
   end
 
   defp it(<< char :: utf8, rest :: binary >>, mode) when char in 0x010000 .. 0x10FFFF do
@@ -190,8 +190,8 @@ defimpl Jazz.Encoder, for: BitString do
 
     point = char - 0x10000
 
-    ["\\u", pad(Integer.to_char_list(0xD800 + (point >>> 10), 16)),
-     "\\u", pad(Integer.to_char_list(0xDC00 + (point &&& 0x003FF), 16)) | it(rest, mode)]
+    ["\\u", pad(Integer.to_charlist(0xD800 + (point >>> 10), 16)),
+     "\\u", pad(Integer.to_charlist(0xDC00 + (point &&& 0x003FF), 16)) | it(rest, mode)]
   end
 
   defp it("", _) do

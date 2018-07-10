@@ -35,8 +35,10 @@ defmodule Jazz.Decode do
 
   def transform(parsed, [keys: :atoms]) when parsed |> is_map do
     for { key, value } <- parsed, into: %{} do
-      if value |> is_list or value |> is_map do
-        value = transform(value, keys: :atoms)
+      value = if value |> is_list or value |> is_map do
+        transform(value, keys: :atoms)
+      else
+        value
       end
 
       { String.to_atom(key), value }
@@ -46,17 +48,19 @@ defmodule Jazz.Decode do
   def transform(parsed, [keys: :atoms]) when parsed |> is_list do
     for value <- parsed do
       if value |> is_list or value |> is_map do
-        value = transform(value, keys: :atoms)
+        transform(value, keys: :atoms)
+      else
+        value
       end
-
-      value
     end
   end
 
   def transform(parsed, [keys: :atoms!]) when parsed |> is_map do
     for { key, value } <- parsed, into: %{} do
-      if value |> is_list or value |> is_map do
-        value = transform(value, keys: :atoms!)
+      value = if value |> is_list or value |> is_map do
+        transform(value, keys: :atoms!)
+      else
+        value
       end
 
       { String.to_existing_atom(key), value }
@@ -66,10 +70,10 @@ defmodule Jazz.Decode do
   def transform(parsed, [keys: :atoms!]) when parsed |> is_list do
     for value <- parsed do
       if value |> is_list or value |> is_map do
-        value = transform(value, keys: :atoms)
+        transform(value, keys: :atoms)
+      else
+        value
       end
-
-      value
     end
   end
 
@@ -104,11 +108,13 @@ defmodule Jazz.Decode do
               value
           end
 
-          if keys do
-            name = case keys do
+          name = if keys do
+            case keys do
               :atoms  -> String.to_atom(name)
               :atoms! -> String.to_existing_atom(name)
             end
+          else
+            name
           end
 
           { name, value }

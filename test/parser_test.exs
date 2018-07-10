@@ -40,7 +40,7 @@ defmodule ParserTest do
 
     assert parse!(~s("\\"\\\\\\/\\b\\f\\n\\r\\t")) == ~s("\\/\b\f\n\r\t)
     assert parse!(~s("\\u2603")) == "☃"
-    assert parse!(~s("\\u2028\\u2029")) == "\x{2028}\x{2029}"
+    assert parse!(~s("\\u2028\\u2029")) == "\u2028\u2029"
     assert parse!(~s("\\uD834\\uDD1E")) == "𝄞"
     assert parse!(~s("\\uD799\\uD799")) == "힙힙"
     assert parse!(~s("✔︎")) == "✔︎"
